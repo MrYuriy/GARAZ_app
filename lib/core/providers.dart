@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/audit/audit_repository.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/auth_repository.dart';
+import '../features/dictionaries/dictionaries_repository.dart';
 import '../features/users/users_repository.dart';
 import 'api_client.dart';
 import 'token_store.dart';
@@ -24,5 +25,9 @@ final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
 );
 
 final usersRepositoryProvider = Provider<UsersRepository>((ref) => UsersRepository(ref.watch(apiClientProvider)));
+
+final dictionariesRepositoryProvider = Provider<DictionariesRepository>(
+  (ref) => DictionariesRepository(ref.watch(apiClientProvider)),
+);
 
 final auditRepositoryProvider = Provider<AuditRepository>((ref) => AuditRepository(ref.watch(apiClientProvider)));

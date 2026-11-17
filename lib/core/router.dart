@@ -7,6 +7,7 @@ import '../features/auth/auth_controller.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/set_password_screen.dart';
 import '../features/auth/splash_screen.dart';
+import '../features/dictionaries/dictionaries_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/shell/home_shell.dart';
 import '../features/users/users_screen.dart';
@@ -38,6 +39,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [GoRoute(path: '/account', builder: (_, _) => const ProfileScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/users', builder: (_, _) => const UsersScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/audit', builder: (_, _) => const AuditScreen())]),
+          StatefulShellBranch(
+            routes: [GoRoute(path: '/dictionaries', builder: (_, _) => const DictionariesScreen())],
+          ),
         ],
       ),
     ],

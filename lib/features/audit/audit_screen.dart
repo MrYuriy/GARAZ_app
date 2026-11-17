@@ -59,6 +59,8 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
         'auth.token_reuse' => Icons.gpp_maybe_outlined,
         'user.created' => Icons.person_add_alt,
         'user.updated' => Icons.manage_accounts_outlined,
+        'dictionary.created' => Icons.playlist_add,
+        'dictionary.updated' => Icons.edit_note,
         _ => Icons.event_note,
       };
 

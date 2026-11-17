@@ -116,6 +116,8 @@ class AuditEntry {
         'auth.token_reuse' => 'Podejrzenie przejęcia sesji',
         'user.created' => 'Utworzenie konta',
         'user.updated' => 'Zmiana konta',
+        'dictionary.created' => 'Dodanie pozycji słownika',
+        'dictionary.updated' => 'Zmiana pozycji słownika',
         _ => action,
       };
 }
@@ -141,4 +143,67 @@ String formatDateTime(DateTime? d) {
   if (d == null) return '—';
   String two(int n) => n.toString().padLeft(2, '0');
   return '${d.year}-${two(d.month)}-${two(d.day)} ${two(d.hour)}:${two(d.minute)}';
+}
+
+/// The panel's lists; [api] is the URL segment under /dictionaries.
+enum DictionaryKind {
+  truckTypes('truck-types', 'Typy wózków'),
+  permitCategories('permit-categories', 'Kategorie uprawnień'),
+  employers('employers', 'Pracodawcy'),
+  incidentCategories('incident-categories', 'Kategorie zdarzeń'),
+  sites('sites', 'Lokalizacje');
+
+  const DictionaryKind(this.api, this.label);
+
+  final String api;
+  final String label;
+}
+
+enum IncidentType {
+  awaria('AWARIA', 'Awaria'),
+  uszkodzenie('USZKODZENIE', 'Uszkodzenie'),
+  kolizja('KOLIZJA', 'Kolizja');
+
+  const IncidentType(this.api, this.label);
+
+  final String api;
+  final String label;
+
+  /// What the type means — shown next to the choice, the line between them is not obvious.
+  String get hint => switch (this) {
+        IncidentType.awaria => 'Wózek przestał działać prawidłowo — usterka techniczna (bateria, hydraulika, maszt…).',
+        IncidentType.uszkodzenie => 'Fizyczne uszkodzenie bez zderzenia (pęknięta osłona, wygięte widły, zużyta opona).',
+        IncidentType.kolizja => 'Wózek w coś uderzył: regał, ścianę lub bramę, inny wózek.',
+      };
+
+  static IncidentType fromApi(String value) => IncidentType.values.firstWhere((t) => t.api == value);
+}
+
+class DictionaryEntry {
+  const DictionaryEntry({
+    required this.id,
+    required this.name,
+    required this.isActive,
+    required this.sortOrder,
+    required this.incidentTypes,
+    required this.defaultOutOfService,
+  });
+
+  final int id;
+  final String name;
+  final bool isActive;
+  final int sortOrder;
+
+  /// Incident categories only; null elsewhere.
+  final List<IncidentType>? incidentTypes;
+  final bool? defaultOutOfService;
+
+  factory DictionaryEntry.fromJson(Map<String, dynamic> j) => DictionaryEntry(
+        id: j['id'] as int,
+        name: j['name'] as String,
+        isActive: j['is_active'] as bool,
+        sortOrder: j['sort_order'] as int,
+        incidentTypes: (j['incident_types'] as List?)?.map((e) => IncidentType.fromApi(e as String)).toList(),
+        defaultOutOfService: j['default_out_of_service'] as bool?,
+      );
 }

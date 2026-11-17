@@ -15,6 +15,7 @@ class _Tab {
 
 const _tabs = [
   _Tab(1, 'Użytkownicy', Icons.group_outlined, adminOnly: true),
+  _Tab(3, 'Słowniki', Icons.list_alt),
   _Tab(2, 'Dziennik', Icons.history, adminOnly: true),
   _Tab(0, 'Konto', Icons.person_outline),
 ];
