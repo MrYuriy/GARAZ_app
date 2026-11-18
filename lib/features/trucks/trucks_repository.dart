@@ -36,6 +36,14 @@ class TrucksRepository {
     return Truck.fromJson((data as Map).cast<String, dynamic>());
   }
 
+  Future<Truck> get(int id) async {
+    final data = await _api.send((d) => d.get('/trucks/$id'));
+    return Truck.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  /// For a truck added by mistake; one that left the fleet is set inactive instead.
+  Future<void> delete(int id) => _api.send((d) => d.delete('/trucks/$id'));
+
   /// New QR token: the printed sticker stops working at once.
   Future<Truck> reissueQr(int id) async {
     final data = await _api.send((d) => d.post('/trucks/$id/qr'));

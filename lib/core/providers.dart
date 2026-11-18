@@ -6,6 +6,7 @@ import '../features/auth/auth_repository.dart';
 import '../features/dictionaries/dictionaries_repository.dart';
 import '../features/operators/operators_repository.dart';
 import '../features/permits/permits_repository.dart';
+import '../features/trucks/truck_catalog_repository.dart';
 import '../features/trucks/trucks_repository.dart';
 import '../features/users/users_repository.dart';
 import 'api_client.dart';
@@ -28,6 +29,10 @@ final usersRepositoryProvider = Provider<UsersRepository>((ref) => UsersReposito
 
 final dictionariesRepositoryProvider = Provider<DictionariesRepository>(
   (ref) => DictionariesRepository(ref.watch(apiClientProvider)),
+);
+
+final truckCatalogRepositoryProvider = Provider<TruckCatalogRepository>(
+  (ref) => TruckCatalogRepository(ref.watch(apiClientProvider)),
 );
 
 final trucksRepositoryProvider = Provider<TrucksRepository>((ref) => TrucksRepository(ref.watch(apiClientProvider)));

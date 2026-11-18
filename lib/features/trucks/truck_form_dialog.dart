@@ -4,11 +4,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 
-/// Add a truck ([truck] == null) or edit one. Pops the saved [Truck].
+/// Add a truck ([truck] == null) or edit one. Pops the saved [Truck], or
+/// [TruckFormDialog.deleted] when the administrator deleted it.
 class TruckFormDialog extends ConsumerStatefulWidget {
   const TruckFormDialog({super.key, this.truck});
 
   final Truck? truck;
+
+  /// What the dialog pops after a delete (a truck that no longer exists).
+  static final deleted = Truck(
+    id: -1,
+    number: '',
+    manufacturer: null,
+    model: null,
+    status: TruckStatus.inactive,
+    site: EntryRef(-1, ''),
+    truckType: EntryRef(-1, ''),
+    qrUrl: '',
+    qrIssuedAt: DateTime.utc(1970),
+  );
 
   @override
   ConsumerState<TruckFormDialog> createState() => _TruckFormDialogState();
@@ -17,8 +31,8 @@ class TruckFormDialog extends ConsumerStatefulWidget {
 class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
   final _form = GlobalKey<FormState>();
   late final _number = TextEditingController(text: widget.truck?.number);
-  late final _manufacturer = TextEditingController(text: widget.truck?.manufacturer);
-  late final _model = TextEditingController(text: widget.truck?.model);
+  late int? _makerId = widget.truck?.manufacturer?.id;
+  late int? _modelId = widget.truck?.model?.id;
   final _comment = TextEditingController();
   late int? _typeId = widget.truck?.truckType.id;
   late int? _siteId = widget.truck?.site.id;
@@ -26,6 +40,7 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
 
   List<DictionaryEntry>? _types;
   List<DictionaryEntry>? _sites;
+  List<TruckManufacturer>? _makers;
   bool _busy = false;
   String? _error;
 
@@ -39,7 +54,7 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
 
   @override
   void dispose() {
-    for (final c in [_number, _manufacturer, _model, _comment]) {
+    for (final c in [_number, _comment]) {
       c.dispose();
     }
     super.dispose();
@@ -50,10 +65,12 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
     try {
       final types = await repo.list(DictionaryKind.truckTypes);
       final sites = await repo.list(DictionaryKind.sites);
+      final makers = await ref.read(truckCatalogRepositoryProvider).list();
       if (!mounted) return;
       setState(() {
         _types = types;
         _sites = sites;
+        _makers = makers;
         // A single site needs no choice.
         if (_isNew && sites.length == 1) _siteId = sites.first.id;
       });
@@ -73,7 +90,43 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
     return items;
   }
 
-  String? _nullIfBlank(String v) => v.trim().isEmpty ? null : v.trim();
+  List<TruckModelEntry> get _modelsOfMaker =>
+      _makers?.where((m) => m.id == _makerId).firstOrNull?.models ?? const <TruckModelEntry>[];
+
+  Future<void> _delete() async {
+    final t = widget.truck!;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Usunąć wózek ${t.number}?'),
+        content: const Text(
+          'Usuń tylko wózek dodany przez pomyłkę. Wózek wycofany z floty oznacz statusem „Nieaktywny” — '
+          'zostanie jego historia.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Anuluj')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Usuń wózek'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(trucksRepositoryProvider).delete(t.id);
+      if (mounted) Navigator.of(context).pop(TruckFormDialog.deleted);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
@@ -87,8 +140,8 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
       if (_isNew) {
         saved = await repo.create({
           'number': _number.text.trim(),
-          'manufacturer': _nullIfBlank(_manufacturer.text),
-          'model': _nullIfBlank(_model.text),
+          'manufacturer_id': ?_makerId,
+          'model_id': ?_modelId,
           'truck_type_id': _typeId,
           'site_id': ?_siteId,
         });
@@ -96,8 +149,8 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
         final t = widget.truck!;
         final changes = <String, dynamic>{
           if (_number.text.trim() != t.number) 'number': _number.text.trim(),
-          if (_nullIfBlank(_manufacturer.text) != t.manufacturer) 'manufacturer': _nullIfBlank(_manufacturer.text),
-          if (_nullIfBlank(_model.text) != t.model) 'model': _nullIfBlank(_model.text),
+          if (_makerId != t.manufacturer?.id) 'manufacturer_id': _makerId,
+          if (_makerId != t.manufacturer?.id || _modelId != t.model?.id) 'model_id': _modelId,
           if (_typeId != t.truckType.id) 'truck_type_id': _typeId,
           if (_siteId != t.site.id) 'site_id': _siteId,
           if (_status != t.status) 'status': _status.api,
@@ -155,22 +208,50 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
                 ),
                 const SizedBox(height: 12),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: TextFormField(
-                        controller: _manufacturer,
+                      child: DropdownButtonFormField<int?>(
+                        key: ValueKey('maker-${_makers?.length}'),
+                        initialValue: _makerId,
+                        isExpanded: true,
                         decoration: const InputDecoration(labelText: 'Producent'),
+                        items: [
+                          const DropdownMenuItem(value: null, child: Text('—')),
+                          for (final m in _makers ?? const <TruckManufacturer>[])
+                            DropdownMenuItem(value: m.id, child: Text(m.name)),
+                        ],
+                        onChanged: (v) => setState(() {
+                          if (v != _makerId) _modelId = null;
+                          _makerId = v;
+                        }),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: TextFormField(
-                        controller: _model,
+                      child: DropdownButtonFormField<int?>(
+                        // Rebuilt when the manufacturer changes, so the choice resets.
+                        key: ValueKey('model-$_makerId-${_makers?.length}'),
+                        initialValue: _modelId,
+                        isExpanded: true,
                         decoration: const InputDecoration(labelText: 'Model'),
+                        items: [
+                          const DropdownMenuItem(value: null, child: Text('—')),
+                          for (final m in _modelsOfMaker) DropdownMenuItem(value: m.id, child: Text(m.name)),
+                        ],
+                        onChanged: _makerId == null ? null : (v) => setState(() => _modelId = v),
                       ),
                     ),
                   ],
                 ),
+                if (_makers != null && _makers!.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Producentów i modele dodasz w „Słowniki” → „Producenci i modele”.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
                 // One site: nothing to choose, the server fills it in.
                 if ((_sites?.length ?? 0) > 1 || (t != null && (_sites?.length ?? 0) != 1)) ...[
                   const SizedBox(height: 12),
@@ -212,9 +293,15 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
         ),
       ),
       actions: [
+        if (!_isNew)
+          TextButton.icon(
+            onPressed: _busy ? null : _delete,
+            icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+            label: Text('Usuń', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
         TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: const Text('Anuluj')),
         FilledButton(
-          onPressed: _busy || _types == null || noTypes ? null : _save,
+          onPressed: _busy || _types == null || _makers == null || noTypes ? null : _save,
           child: Text(_isNew ? 'Dodaj' : 'Zapisz'),
         ),
       ],

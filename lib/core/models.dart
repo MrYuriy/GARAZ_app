@@ -121,6 +121,13 @@ class AuditEntry {
     'truck.created' => 'Dodanie wózka',
     'truck.updated' => 'Zmiana wózka',
     'truck.qr_reissued' => 'Nowy kod QR wózka',
+    'truck.deleted' => 'Usunięcie wózka',
+    'truck_manufacturer.created' => 'Dodanie producenta wózków',
+    'truck_manufacturer.updated' => 'Zmiana producenta wózków',
+    'truck_manufacturer.deleted' => 'Usunięcie producenta wózków',
+    'truck_model.created' => 'Dodanie modelu wózka',
+    'truck_model.updated' => 'Zmiana modelu wózka',
+    'truck_model.deleted' => 'Usunięcie modelu wózka',
     'operator.created' => 'Dodanie operatora',
     'operator.updated' => 'Zmiana operatora',
     'operator.qr_reissued' => 'Nowy kod QR operatora',
@@ -257,8 +264,8 @@ class Truck {
 
   final int id;
   final String number;
-  final String? manufacturer;
-  final String? model;
+  final EntryRef? manufacturer;
+  final EntryRef? model;
   final TruckStatus status;
   final EntryRef site;
   final EntryRef truckType;
@@ -267,18 +274,49 @@ class Truck {
   final String qrUrl;
   final DateTime qrIssuedAt;
 
-  String get makeAndModel => [manufacturer, model].whereType<String>().join(' ');
+  String get makeAndModel => [manufacturer?.name, model?.name].whereType<String>().join(' ');
 
   factory Truck.fromJson(Map<String, dynamic> j) => Truck(
     id: j['id'] as int,
     number: j['number'] as String,
-    manufacturer: j['manufacturer'] as String?,
-    model: j['model'] as String?,
+    manufacturer: _ref(j['manufacturer']),
+    model: _ref(j['model']),
     status: TruckStatus.fromApi(j['status'] as String),
     site: EntryRef.fromJson((j['site'] as Map).cast<String, dynamic>()),
     truckType: EntryRef.fromJson((j['truck_type'] as Map).cast<String, dynamic>()),
     qrUrl: j['qr_url'] as String,
     qrIssuedAt: _date(j['qr_issued_at'])!,
+  );
+}
+
+EntryRef? _ref(Object? v) => v == null ? null : EntryRef.fromJson((v as Map).cast<String, dynamic>());
+
+/// A truck model in the manufacturers list, with how many trucks are it.
+class TruckModelEntry {
+  const TruckModelEntry({required this.id, required this.name, required this.truckCount});
+
+  final int id;
+  final String name;
+  final int truckCount;
+
+  factory TruckModelEntry.fromJson(Map<String, dynamic> j) =>
+      TruckModelEntry(id: j['id'] as int, name: j['name'] as String, truckCount: j['truck_count'] as int? ?? 0);
+}
+
+/// A truck manufacturer with its models; [truckCount] counts its trucks of any model.
+class TruckManufacturer {
+  const TruckManufacturer({required this.id, required this.name, required this.models, required this.truckCount});
+
+  final int id;
+  final String name;
+  final List<TruckModelEntry> models;
+  final int truckCount;
+
+  factory TruckManufacturer.fromJson(Map<String, dynamic> j) => TruckManufacturer(
+    id: j['id'] as int,
+    name: j['name'] as String,
+    truckCount: j['truck_count'] as int? ?? 0,
+    models: [for (final m in j['models'] as List) TruckModelEntry.fromJson((m as Map).cast<String, dynamic>())],
   );
 }
 

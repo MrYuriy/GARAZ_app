@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../trucks/truck_catalog_view.dart';
 
 /// The panel's lists. Everyone signed in reads them; administrators edit.
 class DictionariesScreen extends ConsumerStatefulWidget {
@@ -14,6 +15,9 @@ class DictionariesScreen extends ConsumerStatefulWidget {
 
 class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
   DictionaryKind _kind = DictionaryKind.truckTypes;
+
+  /// "Producenci i modele" is shown instead of a [DictionaryKind] list.
+  bool _catalog = false;
   bool _showInactive = false;
   List<DictionaryEntry> _items = const [];
   bool _loading = false;
@@ -41,8 +45,9 @@ class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
   }
 
   void _select(DictionaryKind kind) {
-    if (kind == _kind) return;
+    if (kind == _kind && !_catalog) return;
     setState(() {
+      _catalog = false;
       _kind = kind;
       _items = const [];
     });
@@ -74,9 +79,12 @@ class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Słowniki'),
-        actions: [IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))],
+        actions: [
+          if (!_catalog)
+            IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+        ],
       ),
-      floatingActionButton: canEdit
+      floatingActionButton: canEdit && !_catalog
           ? FloatingActionButton.extended(
               onPressed: () => _edit(),
               icon: const Icon(Icons.add),
@@ -92,59 +100,74 @@ class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final k in DictionaryKind.values)
-                  ChoiceChip(label: Text(k.label), selected: k == _kind, onSelected: (_) => _select(k)),
+                for (final k in DictionaryKind.values) ...[
+                  ChoiceChip(label: Text(k.label), selected: !_catalog && k == _kind, onSelected: (_) => _select(k)),
+                  // Next to truck types, where it belongs.
+                  if (k == DictionaryKind.truckTypes)
+                    ChoiceChip(
+                      label: const Text('Producenci i modele'),
+                      selected: _catalog,
+                      onSelected: (_) => setState(() => _catalog = true),
+                    ),
+                ],
               ],
             ),
           ),
-          SwitchListTile(
-            dense: true,
-            title: const Text('Pokaż wyłączone'),
-            value: _showInactive,
-            onChanged: (v) {
-              setState(() => _showInactive = v);
-              _load();
-            },
-          ),
-          if (_loading) const LinearProgressIndicator(),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(_error!, style: TextStyle(color: scheme.error)),
-            ),
-          Expanded(
-            child: _items.isEmpty && !_loading
-                ? Center(
-                    child: Text(
-                      canEdit ? 'Lista jest pusta — dodaj pierwszą pozycję.' : 'Lista jest pusta.',
-                      textAlign: TextAlign.center,
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 88),
-                    itemCount: _items.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (_, i) {
-                      final e = _items[i];
-                      return ListTile(
-                        onTap: canEdit ? () => _edit(e) : null,
-                        title: Text(
-                          e.name,
-                          style: e.isActive
-                              ? null
-                              : TextStyle(color: scheme.outline, decoration: TextDecoration.lineThrough),
-                        ),
-                        subtitle: _subtitle(e),
-                        trailing: canEdit
-                            ? Switch(value: e.isActive, onChanged: (v) => _toggle(e, v))
-                            : (e.isActive ? null : const Chip(label: Text('Wyłączone'))),
-                      );
-                    },
-                  ),
-          ),
+          if (_catalog) Expanded(child: TruckCatalogView(canEdit: canEdit)),
+          if (!_catalog) ..._listBody(canEdit, scheme),
         ],
       ),
     );
+  }
+
+  List<Widget> _listBody(bool canEdit, ColorScheme scheme) {
+    return [
+      SwitchListTile(
+        dense: true,
+        title: const Text('Pokaż wyłączone'),
+        value: _showInactive,
+        onChanged: (v) {
+          setState(() => _showInactive = v);
+          _load();
+        },
+      ),
+      if (_loading) const LinearProgressIndicator(),
+      if (_error != null)
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(_error!, style: TextStyle(color: scheme.error)),
+        ),
+      Expanded(
+        child: _items.isEmpty && !_loading
+            ? Center(
+                child: Text(
+                  canEdit ? 'Lista jest pusta — dodaj pierwszą pozycję.' : 'Lista jest pusta.',
+                  textAlign: TextAlign.center,
+                ),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.only(bottom: 88),
+                itemCount: _items.length,
+                separatorBuilder: (_, _) => const Divider(height: 1),
+                itemBuilder: (_, i) {
+                  final e = _items[i];
+                  return ListTile(
+                    onTap: canEdit ? () => _edit(e) : null,
+                    title: Text(
+                      e.name,
+                      style: e.isActive
+                          ? null
+                          : TextStyle(color: scheme.outline, decoration: TextDecoration.lineThrough),
+                    ),
+                    subtitle: _subtitle(e),
+                    trailing: canEdit
+                        ? Switch(value: e.isActive, onChanged: (v) => _toggle(e, v))
+                        : (e.isActive ? null : const Chip(label: Text('Wyłączone'))),
+                  );
+                },
+              ),
+      ),
+    ];
   }
 
   Widget? _subtitle(DictionaryEntry e) {

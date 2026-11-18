@@ -76,7 +76,10 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
       context: context,
       builder: (_) => TruckFormDialog(truck: truck),
     );
-    if (saved != null) {
+    if (identical(saved, TruckFormDialog.deleted)) {
+      _snack('Usunięto wózek ${truck!.number}');
+      await _load();
+    } else if (saved != null) {
       _snack(truck == null ? 'Dodano wózek ${saved.number}' : 'Zapisano wózek ${saved.number}');
       await _load();
     }
