@@ -11,9 +11,8 @@ class ProfileScreen extends ConsumerWidget {
   Future<void> _changePassword(BuildContext context) async {
     final done = await showDialog<bool>(context: context, builder: (_) => const _ChangePasswordDialog());
     if (done == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Hasło zmienione. Inne urządzenia zostały wylogowane.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Hasło zmienione. Inne urządzenia zostały wylogowane.')));
     }
   }
 
@@ -45,10 +44,26 @@ class ProfileScreen extends ConsumerWidget {
           Card(
             child: Column(
               children: [
-                ListTile(leading: const Icon(Icons.person_outline), title: Text(user.displayName), subtitle: const Text('Imię i nazwisko')),
-                ListTile(leading: const Icon(Icons.badge_outlined), title: Text(user.login), subtitle: const Text('Login')),
-                ListTile(leading: const Icon(Icons.mail_outline), title: Text(user.email ?? '—'), subtitle: const Text('Email do powiadomień')),
-                ListTile(leading: const Icon(Icons.shield_outlined), title: Text(user.role.label), subtitle: const Text('Rola')),
+                ListTile(
+                  leading: const Icon(Icons.person_outline),
+                  title: Text(user.displayName),
+                  subtitle: const Text('Imię i nazwisko'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.badge_outlined),
+                  title: Text(user.login),
+                  subtitle: const Text('Login'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.mail_outline),
+                  title: Text(user.email ?? '—'),
+                  subtitle: const Text('Email do powiadomień'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.shield_outlined),
+                  title: Text(user.role.label),
+                  subtitle: const Text('Rola'),
+                ),
                 ListTile(
                   leading: const Icon(Icons.schedule),
                   title: Text(formatDateTime(user.lastLoginAt)),

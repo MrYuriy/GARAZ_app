@@ -28,7 +28,10 @@ void main() {
 
   test('422 detail is shown as field — message', () {
     final msg = ApiClient.messageFor(422, [
-      {'loc': ['body', 'login'], 'msg': 'Value error, too short'},
+      {
+        'loc': ['body', 'login'],
+        'msg': 'Value error, too short',
+      },
     ]);
     expect(msg, contains('login — too short'));
   });

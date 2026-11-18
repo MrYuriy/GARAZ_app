@@ -197,7 +197,11 @@ class _EntryDialogState extends ConsumerState<_EntryDialog> {
     final values = <String, dynamic>{
       'name': _name.text.trim(),
       'sort_order': int.tryParse(_order.text.trim()) ?? 0,
-      if (_isIncident) 'incident_types': [for (final t in IncidentType.values) if (_types.contains(t)) t.api],
+      if (_isIncident)
+        'incident_types': [
+          for (final t in IncidentType.values)
+            if (_types.contains(t)) t.api,
+        ],
       if (_isIncident) 'default_out_of_service': _outOfService,
     };
     final repo = ref.read(dictionariesRepositoryProvider);

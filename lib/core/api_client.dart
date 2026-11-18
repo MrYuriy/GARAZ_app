@@ -127,8 +127,7 @@ class ApiClient {
     }
   }
 
-  static bool _isAuthEndpoint(String path) =>
-      const ['/auth/login', '/auth/refresh'].any(path.contains);
+  static bool _isAuthEndpoint(String path) => const ['/auth/login', '/auth/refresh'].any(path.contains);
 
   /// Run a request and return its JSON body, or throw an [ApiException]
   /// with a message fit to show.
@@ -171,14 +170,16 @@ class ApiClient {
   /// FastAPI's 422 detail is a list of {loc, msg}; show field: message.
   static String _validationText(Object? detail) {
     if (detail is List) {
-      return detail.map((e) {
-        if (e is Map) {
-          final loc = (e['loc'] as List?)?.last;
-          final msg = (e['msg'] ?? '').toString().replaceFirst('Value error, ', '');
-          return loc != null ? '$loc — $msg' : msg;
-        }
-        return e.toString();
-      }).join('; ');
+      return detail
+          .map((e) {
+            if (e is Map) {
+              final loc = (e['loc'] as List?)?.last;
+              final msg = (e['msg'] ?? '').toString().replaceFirst('Value error, ', '');
+              return loc != null ? '$loc — $msg' : msg;
+            }
+            return e.toString();
+          })
+          .join('; ');
     }
     return detail?.toString() ?? '';
   }
