@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/api_client.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import 'incident_fields.dart';
 import 'report_repository.dart';
 import 'scan_dialog.dart';
 
@@ -29,12 +28,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   String? _operatorName;
   bool _checkingOperator = false;
 
-  IncidentType? _type;
-  int? _categoryId;
-  bool _outOfService = false;
-  final _mth = TextEditingController();
-  final _description = TextEditingController();
-  final List<ReportPhoto> _photos = [];
+  final _draft = IncidentDraft();
 
   /// Made once per report and kept across retries, so a resend is not a second report.
   String _clientUuid = const Uuid().v4();
@@ -52,8 +46,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
 
   @override
   void dispose() {
-    _mth.dispose();
-    _description.dispose();
+    _draft.dispose();
     super.dispose();
   }
 
@@ -61,6 +54,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     setState(() => _loadError = null);
     try {
       final truck = await _repo.truck(widget.truckToken);
+      _draft.setTruck(truck);
       if (mounted) setState(() => _truck = truck);
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -92,58 +86,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     }
   }
 
-  List<ReportCategory> get _categories =>
-      _type == null ? const [] : _truck!.categories.where((c) => c.types.contains(_type)).toList();
-
-  void _pickType(IncidentType type) {
-    setState(() {
-      _type = type;
-      if (!_categories.any((c) => c.id == _categoryId)) _categoryId = null;
-    });
-  }
-
-  void _pickCategory(int? id) {
-    final category = _truck!.categories.where((c) => c.id == id).firstOrNull;
-    setState(() {
-      _categoryId = id;
-      // The category's default; the operator may still change it.
-      if (category != null) _outOfService = category.defaultOutOfService;
-    });
-  }
-
-  double? get _mthValue => double.tryParse(_mth.text.trim().replaceAll(',', '.'));
-
-  bool get _mthBelowLast {
-    final last = _truck?.lastMth;
-    final value = _mthValue;
-    return last != null && value != null && value < last;
-  }
-
-  Future<void> _addPhotos(ImageSource source) async {
-    final picker = ImagePicker();
-    // Shrunk on the phone already; the server re-encodes anyway.
-    const side = 2048.0;
-    const quality = 80;
-    final files = source == ImageSource.camera
-        ? [?await picker.pickImage(source: source, maxWidth: side, maxHeight: side, imageQuality: quality)]
-        : await picker.pickMultiImage(maxWidth: side, maxHeight: side, imageQuality: quality);
-    for (final f in files) {
-      final bytes = await f.readAsBytes();
-      if (!mounted) return;
-      setState(() {
-        _photos.add(ReportPhoto(bytes, f.name.isEmpty ? 'zdjecie.jpg' : f.name));
-        _error = null;
-      });
-    }
-  }
-
   String? get _missing {
     if (_operatorToken == null) return 'Zeskanuj swoją kartę operatora.';
-    if (_type == null) return 'Wybierz rodzaj zdarzenia.';
-    if (_categoryId == null) return 'Wybierz kategorię.';
-    if (_mth.text.trim().isNotEmpty && _mthValue == null) return 'Motogodziny: podaj liczbę, np. 1234,5.';
-    if (_photos.isEmpty) return 'Dodaj co najmniej jedno zdjęcie.';
-    return null;
+    return _draft.missing(photoRequired: true);
   }
 
   Future<void> _send() async {
@@ -161,13 +106,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
         'client_uuid': _clientUuid,
         'truck_token': widget.truckToken,
         'operator_token': _operatorToken,
-        'incident_type': _type!.api,
-        'category_id': _categoryId,
-        'description': _description.text.trim().isEmpty ? null : _description.text.trim(),
-        'mth': _mthValue?.toStringAsFixed(1),
-        'out_of_service': _outOfService,
+        ..._draft.toJson(),
         'reported_at': DateTime.now().toUtc().toIso8601String(),
-      }, _photos);
+      }, _draft.photos);
       if (mounted) setState(() => _sent = sent);
     } on ApiException catch (e) {
       setState(
@@ -185,13 +126,8 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     setState(() {
       _sent = null;
       _clientUuid = const Uuid().v4();
-      _type = null;
-      _categoryId = null;
-      _outOfService = false;
-      _mth.clear();
-      _description.clear();
-      _photos.clear();
     });
+    _draft.clear();
     _load(); // fresh last hour meter and truck status
   }
 
@@ -231,7 +167,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       children: [
         _truckCard(context, truck),
         const SizedBox(height: 12),
-        _step(context, '1. Operator'),
+        stepTitle(context, '1. Operator'),
         Card(
           child: ListTile(
             leading: Icon(
@@ -250,97 +186,12 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        _step(context, '2. Co się stało?'),
-        SegmentedButton<IncidentType>(
-          segments: [for (final t in IncidentType.values) ButtonSegment(value: t, label: Text(t.label))],
-          selected: {?_type},
-          emptySelectionAllowed: true,
-          onSelectionChanged: _sending ? null : (s) => s.isEmpty ? null : _pickType(s.first),
-        ),
-        const SizedBox(height: 8),
-        // The line between the three is not obvious: say what each one means.
-        for (final t in IncidentType.values)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: '${t.label}: ',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  TextSpan(text: t.hint),
-                ],
-              ),
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: _type == t ? scheme.primary : scheme.onSurfaceVariant),
-            ),
-          ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<int>(
-          key: ValueKey('category-$_type'),
-          initialValue: _categoryId,
-          isExpanded: true,
-          decoration: InputDecoration(
-            labelText: 'Kategoria',
-            helperText: _type == null ? 'Najpierw wybierz rodzaj zdarzenia.' : null,
-          ),
-          items: [for (final c in _categories) DropdownMenuItem(value: c.id, child: Text(c.name))],
-          onChanged: _type == null || _sending ? null : _pickCategory,
-        ),
-        const SizedBox(height: 8),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Wózek wyłączony z eksploatacji'),
-          subtitle: Text(
-            _outOfService
-                ? 'TAK — wózek zostanie zablokowany do decyzji administratora.'
-                : 'NIE — wózek może dalej pracować.',
-          ),
-          value: _outOfService,
-          onChanged: _sending ? null : (v) => setState(() => _outOfService = v),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _mth,
+        IncidentFields(
+          draft: _draft,
+          firstStep: 2,
+          photoRequired: true,
           enabled: !_sending,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-          decoration: InputDecoration(
-            labelText: 'Motogodziny (MTH)',
-            helperText: truck.lastMth == null ? 'Z licznika wózka.' : 'Ostatnio zgłoszono: ${_mthText(truck.lastMth!)}',
-            errorText: _mthBelowLast
-                ? 'Mniej niż ostatnio (${_mthText(truck.lastMth!)}). Sprawdź licznik — można wysłać.'
-                : null,
-          ),
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _description,
-          enabled: !_sending,
-          maxLines: 3,
-          maxLength: 2000,
-          decoration: const InputDecoration(labelText: 'Opis (opcjonalnie)', alignLabelWithHint: true),
-        ),
-        const SizedBox(height: 4),
-        _step(context, '3. Zdjęcia (co najmniej jedno)'),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (var i = 0; i < _photos.length; i++) _thumb(i),
-            OutlinedButton.icon(
-              onPressed: _sending ? null : () => _addPhotos(ImageSource.camera),
-              icon: const Icon(Icons.photo_camera),
-              label: const Text('Zrób zdjęcie'),
-            ),
-            OutlinedButton.icon(
-              onPressed: _sending ? null : () => _addPhotos(ImageSource.gallery),
-              icon: const Icon(Icons.photo_library_outlined),
-              label: const Text('Z galerii'),
-            ),
-          ],
+          onChanged: () => setState(() => _error = null),
         ),
         const SizedBox(height: 20),
         if (_error != null)
@@ -360,13 +211,6 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     );
   }
 
-  String _mthText(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
-
-  Widget _step(BuildContext context, String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-  );
-
   Widget _truckCard(BuildContext context, ReportTruck truck) {
     final stopped = truck.status == TruckStatus.outOfService;
     return Card(
@@ -377,25 +221,6 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       ),
     );
   }
-
-  Widget _thumb(int i) => Stack(
-    children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.memory(_photos[i].bytes, width: 96, height: 96, fit: BoxFit.cover),
-      ),
-      Positioned(
-        right: 0,
-        top: 0,
-        child: IconButton.filledTonal(
-          visualDensity: VisualDensity.compact,
-          tooltip: 'Usuń zdjęcie',
-          onPressed: _sending ? null : () => setState(() => _photos.removeAt(i)),
-          icon: const Icon(Icons.close, size: 16),
-        ),
-      ),
-    ],
-  );
 
   Widget _done(BuildContext context, ReportTruck truck) {
     final sent = _sent!;

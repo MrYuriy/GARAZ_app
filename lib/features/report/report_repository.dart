@@ -23,9 +23,10 @@ class ReportCategory {
   );
 }
 
-/// The truck behind a scanned sticker.
+/// The truck behind a scanned sticker (or picked in the panel, then with [id]).
 class ReportTruck {
   const ReportTruck({
+    this.id,
     required this.number,
     required this.truckType,
     required this.make,
@@ -34,6 +35,7 @@ class ReportTruck {
     required this.categories,
   });
 
+  final int? id;
   final String number;
   final String truckType;
   final String? make;
@@ -42,6 +44,7 @@ class ReportTruck {
   final List<ReportCategory> categories;
 
   factory ReportTruck.fromJson(Map<String, dynamic> j) => ReportTruck(
+    id: j['id'] as int?,
     number: j['number'] as String,
     truckType: j['truck_type'] as String,
     make: j['make'] as String?,
@@ -57,6 +60,15 @@ class ReportPhoto {
   final Uint8List bytes;
   final String name;
 }
+
+/// The report and its photos as one multipart body: `data` is JSON, each
+/// photo goes under the same plain "photos" key, the way FastAPI reads a list.
+FormData reportForm(Map<String, dynamic> report, List<ReportPhoto> photos) => FormData()
+  ..fields.add(MapEntry('data', jsonEncode(report)))
+  ..files.addAll([for (final p in photos) MapEntry('photos', MultipartFile.fromBytes(p.bytes, filename: p.name))]);
+
+/// Photos take a while over a weak connection.
+final uploadOptions = Options(sendTimeout: const Duration(minutes: 3), receiveTimeout: const Duration(minutes: 3));
 
 /// The sign-in-free calls an operator's phone makes.
 class ReportRepository {
@@ -80,16 +92,8 @@ class ReportRepository {
   /// Sends the report; returns its id and whether the truck is now stopped.
   /// Re-sending with the same `client_uuid` is safe: the server files it once.
   Future<({int id, bool truckOutOfService})> submit(Map<String, dynamic> report, List<ReportPhoto> photos) async {
-    // Each photo under the same plain "photos" key, the way FastAPI reads a list.
-    final form = FormData()
-      ..fields.add(MapEntry('data', jsonEncode(report)))
-      ..files.addAll([for (final p in photos) MapEntry('photos', MultipartFile.fromBytes(p.bytes, filename: p.name))]);
     final data = await _api.send(
-      (d) => d.post(
-        '/public/incidents',
-        data: form,
-        options: Options(sendTimeout: const Duration(minutes: 3), receiveTimeout: const Duration(minutes: 3)),
-      ),
+      (d) => d.post('/public/incidents', data: reportForm(report, photos), options: uploadOptions),
     );
     final m = (data as Map).cast<String, dynamic>();
     return (id: m['id'] as int, truckOutOfService: m['truck_out_of_service'] as bool);
