@@ -128,6 +128,8 @@ class AuditEntry {
     'truck_model.created' => 'Dodanie modelu wózka',
     'truck_model.updated' => 'Zmiana modelu wózka',
     'truck_model.deleted' => 'Usunięcie modelu wózka',
+    'incident.created' => 'Zgłoszenie zdarzenia',
+    'incident.updated' => 'Zmiana zgłoszenia',
     'operator.created' => 'Dodanie operatora',
     'operator.updated' => 'Zmiana operatora',
     'operator.qr_reissued' => 'Nowy kod QR operatora',
@@ -475,4 +477,126 @@ class Operator {
     permits: [for (final p in j['permits'] as List) PermitBrief.fromJson((p as Map).cast<String, dynamic>())],
     permitStatus: j['permit_status'] == null ? null : PermitStatus.fromApi(j['permit_status'] as String),
   );
+}
+
+enum IncidentStatus {
+  newReport('NEW', 'Nowe'),
+  inProgress('IN_PROGRESS', 'W trakcie'),
+  closed('CLOSED', 'Zamknięte');
+
+  const IncidentStatus(this.api, this.label);
+
+  final String api;
+  final String label;
+
+  static IncidentStatus fromApi(String value) => IncidentStatus.values.firstWhere((s) => s.api == value);
+}
+
+/// A mark the server puts on a report for the administrator to look at.
+String incidentFlagLabel(String flag) => switch (flag) {
+  'OPERATOR_INACTIVE' => 'Operator nieaktywny',
+  'NO_ACTIVE_PERMIT' => 'Brak ważnego uprawnienia',
+  'TRUCK_TYPE_NOT_PERMITTED' => 'Brak uprawnienia na ten typ wózka',
+  'MTH_LOWER_THAN_LAST' => 'MTH niższe niż ostatnio',
+  _ => flag,
+};
+
+class IncidentPhotoRef {
+  const IncidentPhotoRef({required this.id, required this.width, required this.height});
+
+  final int id;
+  final int width;
+  final int height;
+
+  factory IncidentPhotoRef.fromJson(Map<String, dynamic> j) =>
+      IncidentPhotoRef(id: j['id'] as int, width: j['width'] as int, height: j['height'] as int);
+}
+
+class IncidentEvent {
+  const IncidentEvent({
+    required this.createdAt,
+    required this.userName,
+    required this.fromStatus,
+    required this.toStatus,
+    required this.comment,
+  });
+
+  final DateTime createdAt;
+
+  /// Null for the report itself (sent by an operator, not a user).
+  final String? userName;
+  final IncidentStatus? fromStatus;
+  final IncidentStatus toStatus;
+  final String? comment;
+
+  factory IncidentEvent.fromJson(Map<String, dynamic> j) {
+    final user = j['user'] as Map?;
+    return IncidentEvent(
+      createdAt: _date(j['created_at'])!,
+      userName: user == null ? null : (user['full_name'] as String? ?? user['login'] as String),
+      fromStatus: j['from_status'] == null ? null : IncidentStatus.fromApi(j['from_status'] as String),
+      toStatus: IncidentStatus.fromApi(j['to_status'] as String),
+      comment: j['comment'] as String?,
+    );
+  }
+}
+
+/// A report as lists and its page show it; [description] and [events] only on the page.
+class Incident {
+  const Incident({
+    required this.id,
+    required this.occurredAt,
+    required this.type,
+    required this.category,
+    required this.truck,
+    required this.truckStatus,
+    required this.operator,
+    required this.status,
+    required this.flags,
+    required this.outOfService,
+    required this.mth,
+    required this.photos,
+    this.description,
+    this.events = const [],
+  });
+
+  final int id;
+  final DateTime occurredAt;
+  final IncidentType type;
+  final EntryRef category;
+
+  /// The truck's number as [EntryRef.name].
+  final EntryRef truck;
+  final TruckStatus truckStatus;
+  final EntryRef operator;
+  final IncidentStatus status;
+  final List<String> flags;
+  final bool outOfService;
+  final double? mth;
+  final List<IncidentPhotoRef> photos;
+  final String? description;
+  final List<IncidentEvent> events;
+
+  factory Incident.fromJson(Map<String, dynamic> j) {
+    final truck = (j['truck'] as Map).cast<String, dynamic>();
+    final op = (j['operator'] as Map).cast<String, dynamic>();
+    return Incident(
+      id: j['id'] as int,
+      occurredAt: _date(j['occurred_at'])!,
+      type: IncidentType.fromApi(j['incident_type'] as String),
+      category: EntryRef.fromJson((j['category'] as Map).cast<String, dynamic>()),
+      truck: EntryRef(truck['id'] as int, truck['number'] as String),
+      truckStatus: TruckStatus.fromApi(truck['status'] as String),
+      operator: EntryRef(op['id'] as int, op['full_name'] as String),
+      status: IncidentStatus.fromApi(j['status'] as String),
+      flags: [for (final f in j['flags'] as List) f as String],
+      outOfService: j['out_of_service'] as bool,
+      mth: (j['mth'] as num?)?.toDouble(),
+      photos: [for (final p in j['photos'] as List) IncidentPhotoRef.fromJson((p as Map).cast<String, dynamic>())],
+      description: j['description'] as String?,
+      events: [
+        for (final e in (j['events'] as List?) ?? const []) IncidentEvent.fromJson((e as Map).cast<String, dynamic>()),
+      ],
+    );
+  }
 }

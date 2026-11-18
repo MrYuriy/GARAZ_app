@@ -8,10 +8,13 @@ import '../features/auth/login_screen.dart';
 import '../features/auth/set_password_screen.dart';
 import '../features/auth/splash_screen.dart';
 import '../features/dictionaries/dictionaries_screen.dart';
+import '../features/incidents/incident_screen.dart';
+import '../features/incidents/incidents_screen.dart';
 import '../features/operators/operator_screen.dart';
 import '../features/operators/operators_screen.dart';
 import '../features/permits/permits_screen.dart';
 import '../features/profile/profile_screen.dart';
+import '../features/report/report_screen.dart';
 import '../features/shell/home_shell.dart';
 import '../features/trucks/trucks_screen.dart';
 import '../features/users/users_screen.dart';
@@ -37,6 +40,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/set-password', builder: (_, _) => const SetPasswordScreen()),
+      // A truck's sticker: the operator's report form, open to anyone holding the code.
+      GoRoute(
+        path: '/t/:token',
+        builder: (_, state) => ReportScreen(truckToken: state.pathParameters['token']!),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => HomeShell(navigationShell: shell),
         branches: [
@@ -72,12 +80,28 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [GoRoute(path: '/permits', builder: (_, _) => const PermitsScreen())],
           ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/incidents',
+                builder: (_, _) => const IncidentsScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, state) => IncidentScreen(incidentId: int.parse(state.pathParameters['id']!)),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     ],
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
       final loc = state.matchedLocation;
+      // Operators have no accounts: the report form never waits for or needs a session.
+      if (loc.startsWith('/t/')) return null;
       switch (auth.status) {
         case AuthStatus.unknown:
           return loc == '/splash' ? null : '/splash';
@@ -87,8 +111,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           // A starting password from the administrator opens nothing else.
           if (auth.user?.mustChangePassword ?? false) return loc == '/set-password' ? null : '/set-password';
           final isAdmin = auth.user?.role.isAdmin ?? false;
-          if (loc == '/splash' || loc == '/login' || loc == '/set-password') return '/operators';
-          if (!isAdmin && _adminOnly.any(loc.startsWith)) return '/operators';
+          if (loc == '/splash' || loc == '/login' || loc == '/set-password') return '/incidents';
+          if (!isAdmin && _adminOnly.any(loc.startsWith)) return '/incidents';
           return null;
       }
     },

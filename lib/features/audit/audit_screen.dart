@@ -64,6 +64,8 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
     'truck.created' => Icons.forklift,
     'truck.updated' => Icons.build_outlined,
     'truck.qr_reissued' => Icons.qr_code_2,
+    'incident.created' => Icons.report_outlined,
+    'incident.updated' => Icons.assignment_turned_in_outlined,
     'truck.deleted' || 'truck_manufacturer.deleted' || 'truck_model.deleted' => Icons.delete_outline,
     'truck_manufacturer.created' || 'truck_manufacturer.updated' => Icons.factory_outlined,
     'truck_model.created' || 'truck_model.updated' => Icons.category_outlined,

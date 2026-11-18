@@ -4,8 +4,10 @@ import '../features/audit/audit_repository.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/auth_repository.dart';
 import '../features/dictionaries/dictionaries_repository.dart';
+import '../features/incidents/incidents_repository.dart';
 import '../features/operators/operators_repository.dart';
 import '../features/permits/permits_repository.dart';
+import '../features/report/report_repository.dart';
 import '../features/trucks/truck_catalog_repository.dart';
 import '../features/trucks/trucks_repository.dart';
 import '../features/users/users_repository.dart';
@@ -42,5 +44,12 @@ final operatorsRepositoryProvider = Provider<OperatorsRepository>(
 );
 
 final permitsRepositoryProvider = Provider<PermitsRepository>((ref) => PermitsRepository(ref.watch(apiClientProvider)));
+
+/// The operator's report form: calls that need no sign-in.
+final reportRepositoryProvider = Provider<ReportRepository>((ref) => ReportRepository(ref.watch(apiClientProvider)));
+
+final incidentsRepositoryProvider = Provider<IncidentsRepository>(
+  (ref) => IncidentsRepository(ref.watch(apiClientProvider)),
+);
 
 final auditRepositoryProvider = Provider<AuditRepository>((ref) => AuditRepository(ref.watch(apiClientProvider)));

@@ -14,6 +14,7 @@ class _Tab {
 }
 
 const _tabs = [
+  _Tab(7, 'Zdarzenia', Icons.report_outlined),
   _Tab(5, 'Operatorzy', Icons.badge_outlined),
   _Tab(6, 'Uprawnienia', Icons.verified_outlined),
   _Tab(4, 'Wózki', Icons.forklift),

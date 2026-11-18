@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- The app talks to the GARAZ API. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Scanning the operator card and photographing the damage. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="GARAZ"
         android:name="${applicationName}"
