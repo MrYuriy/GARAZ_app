@@ -53,23 +53,28 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
   }
 
   IconData _icon(String action) => switch (action) {
-        'auth.login' => Icons.login,
-        'auth.logout_all' => Icons.logout,
-        'auth.password_changed' => Icons.key,
-        'auth.token_reuse' => Icons.gpp_maybe_outlined,
-        'user.created' => Icons.person_add_alt,
-        'user.updated' => Icons.manage_accounts_outlined,
-        'dictionary.created' => Icons.playlist_add,
-        'dictionary.updated' => Icons.edit_note,
-        _ => Icons.event_note,
-      };
+    'auth.login' => Icons.login,
+    'auth.logout_all' => Icons.logout,
+    'auth.password_changed' => Icons.key,
+    'auth.token_reuse' => Icons.gpp_maybe_outlined,
+    'user.created' => Icons.person_add_alt,
+    'user.updated' => Icons.manage_accounts_outlined,
+    'dictionary.created' => Icons.playlist_add,
+    'dictionary.updated' => Icons.edit_note,
+    'truck.created' => Icons.forklift,
+    'truck.updated' => Icons.build_outlined,
+    'truck.qr_reissued' => Icons.qr_code_2,
+    _ => Icons.event_note,
+  };
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dziennik zmian'),
-        actions: [IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _reload, icon: const Icon(Icons.refresh))],
+        actions: [
+          IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _reload, icon: const Icon(Icons.refresh)),
+        ],
       ),
       body: Column(
         children: [

@@ -4,6 +4,7 @@ import '../features/audit/audit_repository.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/auth_repository.dart';
 import '../features/dictionaries/dictionaries_repository.dart';
+import '../features/trucks/trucks_repository.dart';
 import '../features/users/users_repository.dart';
 import 'api_client.dart';
 import 'token_store.dart';
@@ -17,11 +18,8 @@ final authRepositoryProvider = Provider<AuthRepository>(
 );
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
-  (ref) => AuthController(
-    ref.watch(authRepositoryProvider),
-    ref.watch(apiClientProvider),
-    ref.watch(tokenStoreProvider),
-  ),
+  (ref) =>
+      AuthController(ref.watch(authRepositoryProvider), ref.watch(apiClientProvider), ref.watch(tokenStoreProvider)),
 );
 
 final usersRepositoryProvider = Provider<UsersRepository>((ref) => UsersRepository(ref.watch(apiClientProvider)));
@@ -29,5 +27,7 @@ final usersRepositoryProvider = Provider<UsersRepository>((ref) => UsersReposito
 final dictionariesRepositoryProvider = Provider<DictionariesRepository>(
   (ref) => DictionariesRepository(ref.watch(apiClientProvider)),
 );
+
+final trucksRepositoryProvider = Provider<TrucksRepository>((ref) => TrucksRepository(ref.watch(apiClientProvider)));
 
 final auditRepositoryProvider = Provider<AuditRepository>((ref) => AuditRepository(ref.watch(apiClientProvider)));

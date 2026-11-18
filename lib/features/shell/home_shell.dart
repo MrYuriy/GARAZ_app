@@ -15,6 +15,7 @@ class _Tab {
 
 const _tabs = [
   _Tab(1, 'Użytkownicy', Icons.group_outlined, adminOnly: true),
+  _Tab(4, 'Wózki', Icons.forklift),
   _Tab(3, 'Słowniki', Icons.list_alt),
   _Tab(2, 'Dziennik', Icons.history, adminOnly: true),
   _Tab(0, 'Konto', Icons.person_outline),
@@ -31,7 +32,8 @@ class HomeShell extends ConsumerWidget {
     final isAdmin = ref.watch(authControllerProvider).user?.role.isAdmin ?? false;
     final tabs = _tabs.where((t) => isAdmin || !t.adminOnly).toList();
     final selected = tabs.indexWhere((t) => t.branch == navigationShell.currentIndex).clamp(0, tabs.length - 1);
-    void go(int i) => navigationShell.goBranch(tabs[i].branch, initialLocation: tabs[i].branch == navigationShell.currentIndex);
+    void go(int i) =>
+        navigationShell.goBranch(tabs[i].branch, initialLocation: tabs[i].branch == navigationShell.currentIndex);
 
     final wide = MediaQuery.sizeOf(context).width >= 720;
     if (wide) {
@@ -42,10 +44,11 @@ class HomeShell extends ConsumerWidget {
               selectedIndex: selected,
               onDestinationSelected: go,
               labelType: NavigationRailLabelType.all,
-              leading: const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Icon(Icons.forklift, size: 32)),
-              destinations: [
-                for (final t in tabs) NavigationRailDestination(icon: Icon(t.icon), label: Text(t.label)),
-              ],
+              leading: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Icon(Icons.forklift, size: 32),
+              ),
+              destinations: [for (final t in tabs) NavigationRailDestination(icon: Icon(t.icon), label: Text(t.label))],
             ),
             const VerticalDivider(width: 1),
             Expanded(child: navigationShell),
