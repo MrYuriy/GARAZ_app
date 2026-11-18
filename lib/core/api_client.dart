@@ -1,17 +1,28 @@
 import 'package:dio/dio.dart';
 
 import 'config.dart';
+import 'models.dart';
 import 'token_store.dart';
 
 /// An API answer the caller should show, with a Polish message for the user.
 class ApiException implements Exception {
-  ApiException(this.statusCode, this.message, {this.detail});
+  ApiException(this.statusCode, this.message, {this.detail, this.body});
 
   final int statusCode;
   final String message;
 
   /// What the server said, for logs and fields it reports by name.
   final Object? detail;
+
+  /// The whole answer, for errors that carry more than `detail`.
+  final Object? body;
+
+  /// A delete refused because trucks still use the entry: those trucks, as {id, number}.
+  List<EntryRef>? get trucksInUse {
+    final b = body;
+    if (statusCode != 409 || b is! Map || b['trucks'] is! List) return null;
+    return [for (final t in b['trucks'] as List) EntryRef((t as Map)['id'] as int, t['number'] as String)];
+  }
 
   @override
   String toString() => message;
@@ -148,7 +159,13 @@ class ApiClient {
     final code = resp.statusCode ?? 0;
     if (code >= 200 && code < 300) return resp.data;
     final detail = resp.data is Map ? (resp.data as Map)['detail'] : null;
-    throw ApiException(code, messageFor(code, detail), detail: detail);
+    final inUse = code == 409 && resp.data is Map && (resp.data as Map)['trucks'] is List;
+    throw ApiException(
+      code,
+      inUse ? 'Pozycja jest używana przez wózki.' : messageFor(code, detail),
+      detail: detail,
+      body: resp.data,
+    );
   }
 
   /// Polish text for a failed answer.
