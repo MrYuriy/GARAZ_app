@@ -74,6 +74,8 @@ class ApiClient {
                 final opts = error.requestOptions;
                 opts.extra['__retried'] = true;
                 opts.headers['Authorization'] = 'Bearer ${tokens.access}';
+                // A multipart body is consumed once sent; the retry needs a fresh copy.
+                if (opts.data is FormData) opts.data = (opts.data as FormData).clone();
                 return handler.resolve(await dio.fetch(opts));
               } on DioException catch (e) {
                 return handler.next(e);
