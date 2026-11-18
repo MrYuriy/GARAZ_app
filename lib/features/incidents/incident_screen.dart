@@ -175,7 +175,11 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                               )
                             : null,
                       ),
-                      ListTile(leading: const Icon(Icons.badge_outlined), title: Text(i.operator.name)),
+                      ListTile(
+                        leading: Icon(i.operator == null ? Icons.person_outline : Icons.badge_outlined),
+                        title: Text(i.driver),
+                        subtitle: i.operator == null ? const Text('osoba spoza rejestru operatorów') : null,
+                      ),
                       if (i.description != null)
                         ListTile(leading: const Icon(Icons.notes), title: Text(i.description!)),
                     ],
@@ -232,7 +236,7 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                     leading: const Icon(Icons.history),
                     title: Text(
                       e.fromStatus == null
-                          ? 'Zgłoszone przez operatora'
+                          ? (e.userName == null ? 'Zgłoszone przez operatora' : 'Dodane w panelu')
                           : e.fromStatus == e.toStatus
                           ? 'Komentarz'
                           : '${e.fromStatus!.label} → ${e.toStatus.label}',

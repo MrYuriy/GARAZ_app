@@ -77,15 +77,27 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
     _load();
   }
 
-  Future<void> _open(Incident i) async {
-    await context.push('/incidents/${i.id}');
+  Future<void> _open(int id) async {
+    await context.push('/incidents/$id');
     await _load();
+  }
+
+  Future<void> _add() async {
+    final id = await context.push<int>('/incidents/new');
+    if (id == null || !mounted) return;
+    await _load();
+    if (mounted) await _open(id);
   }
 
   @override
   Widget build(BuildContext context) {
     final items = _page?.items ?? const <Incident>[];
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _add,
+        icon: const Icon(Icons.add),
+        label: const Text('Dodaj zgłoszenie'),
+      ),
       appBar: AppBar(
         title: const Text('Zdarzenia'),
         actions: [IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))],
@@ -162,14 +174,16 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
             child: items.isEmpty && !_loading
                 ? const Center(
                     child: Text(
-                      'Brak zgłoszeń. Operatorzy zgłaszają zdarzenia, skanując kod QR na wózku.',
+                      'Brak zgłoszeń. Operatorzy zgłaszają zdarzenia, skanując kod QR na wózku; '
+                      'zgłoszenie za kogoś dodasz przyciskiem „Dodaj zgłoszenie”.',
                       textAlign: TextAlign.center,
                     ),
                   )
                 : ListView.separated(
+                    padding: const EdgeInsets.only(bottom: 88), // clear of the add button
                     itemCount: items.length,
                     separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (_, i) => _IncidentTile(incident: items[i], onTap: () => _open(items[i])),
+                    itemBuilder: (_, i) => _IncidentTile(incident: items[i], onTap: () => _open(items[i].id)),
                   ),
           ),
         ],
@@ -209,7 +223,7 @@ class _IncidentTile extends StatelessWidget {
           children: [
             TextSpan(
               text: [
-                i.operator.name,
+                i.driver,
                 formatDateTime(i.occurredAt),
                 if (i.mth != null) 'MTH ${formatMth(i.mth!)}',
                 if (i.outOfService) 'wyłączony z eksploatacji',

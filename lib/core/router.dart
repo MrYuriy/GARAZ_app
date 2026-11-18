@@ -10,6 +10,7 @@ import '../features/auth/splash_screen.dart';
 import '../features/dictionaries/dictionaries_screen.dart';
 import '../features/incidents/incident_screen.dart';
 import '../features/incidents/incidents_screen.dart';
+import '../features/incidents/new_incident_screen.dart';
 import '../features/operators/operator_screen.dart';
 import '../features/operators/operators_screen.dart';
 import '../features/permits/permits_screen.dart';
@@ -69,6 +70,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/operators',
                 builder: (_, _) => const OperatorsScreen(),
                 routes: [
+                  // Before ':id', which would take "new" for a number.
+                  GoRoute(path: 'new', builder: (_, _) => const NewIncidentScreen()),
                   GoRoute(
                     path: ':id',
                     builder: (_, state) => OperatorScreen(operatorId: int.parse(state.pathParameters['id']!)),
@@ -86,6 +89,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/incidents',
                 builder: (_, _) => const IncidentsScreen(),
                 routes: [
+                  // Before ':id', which would take "new" for a number.
+                  GoRoute(path: 'new', builder: (_, _) => const NewIncidentScreen()),
                   GoRoute(
                     path: ':id',
                     builder: (_, state) => IncidentScreen(incidentId: int.parse(state.pathParameters['id']!)),

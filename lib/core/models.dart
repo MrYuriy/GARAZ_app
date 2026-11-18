@@ -498,6 +498,7 @@ String incidentFlagLabel(String flag) => switch (flag) {
   'NO_ACTIVE_PERMIT' => 'Brak ważnego uprawnienia',
   'TRUCK_TYPE_NOT_PERMITTED' => 'Brak uprawnienia na ten typ wózka',
   'MTH_LOWER_THAN_LAST' => 'MTH niższe niż ostatnio',
+  'UNREGISTERED_OPERATOR' => 'Osoba spoza rejestru operatorów',
   _ => flag,
 };
 
@@ -523,7 +524,7 @@ class IncidentEvent {
 
   final DateTime createdAt;
 
-  /// Null for the report itself (sent by an operator, not a user).
+  /// Null for a report sent from an operator's phone.
   final String? userName;
   final IncidentStatus? fromStatus;
   final IncidentStatus toStatus;
@@ -551,6 +552,8 @@ class Incident {
     required this.truck,
     required this.truckStatus,
     required this.operator,
+    required this.operatorName,
+    required this.createdBy,
     required this.status,
     required this.flags,
     required this.outOfService,
@@ -568,7 +571,13 @@ class Incident {
   /// The truck's number as [EntryRef.name].
   final EntryRef truck;
   final TruckStatus truckStatus;
-  final EntryRef operator;
+
+  /// Null for a driver outside the register: [operatorName] then.
+  final EntryRef? operator;
+  final String? operatorName;
+
+  /// Who entered it in the panel; null for a report from an operator's phone.
+  final String? createdBy;
   final IncidentStatus status;
   final List<String> flags;
   final bool outOfService;
@@ -577,9 +586,13 @@ class Incident {
   final String? description;
   final List<IncidentEvent> events;
 
+  /// Whoever drove: the operator, or the name entered for someone outside the register.
+  String get driver => operator?.name ?? operatorName ?? '?';
+
   factory Incident.fromJson(Map<String, dynamic> j) {
     final truck = (j['truck'] as Map).cast<String, dynamic>();
-    final op = (j['operator'] as Map).cast<String, dynamic>();
+    final op = (j['operator'] as Map?)?.cast<String, dynamic>();
+    final by = j['created_by'] as Map?;
     return Incident(
       id: j['id'] as int,
       occurredAt: _date(j['occurred_at'])!,
@@ -587,7 +600,9 @@ class Incident {
       category: EntryRef.fromJson((j['category'] as Map).cast<String, dynamic>()),
       truck: EntryRef(truck['id'] as int, truck['number'] as String),
       truckStatus: TruckStatus.fromApi(truck['status'] as String),
-      operator: EntryRef(op['id'] as int, op['full_name'] as String),
+      operator: op == null ? null : EntryRef(op['id'] as int, op['full_name'] as String),
+      operatorName: j['operator_name'] as String?,
+      createdBy: by == null ? null : (by['full_name'] as String? ?? by['login'] as String),
       status: IncidentStatus.fromApi(j['status'] as String),
       flags: [for (final f in j['flags'] as List) f as String],
       outOfService: j['out_of_service'] as bool,

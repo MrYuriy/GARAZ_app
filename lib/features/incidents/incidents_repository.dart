@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/api_client.dart';
 import '../../core/models.dart';
+import '../report/report_repository.dart';
 
 class IncidentsRepository {
   IncidentsRepository(this._api);
@@ -49,6 +50,33 @@ class IncidentsRepository {
   /// A status change and/or a comment, each a line in the history.
   Future<Incident> update(int id, {IncidentStatus? status, String? comment}) async {
     final data = await _api.send((d) => d.patch('/incidents/$id', data: {'status': ?status?.api, 'comment': ?comment}));
+    return Incident.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  // ----- entering a report for someone else -----
+
+  /// A truck picked from the list, with its categories and last hour meter.
+  Future<ReportTruck> formTruck(int truckId) async {
+    final data = await _api.send((d) => d.get('/incidents/form/trucks/$truckId'));
+    return ReportTruck.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  /// The same for a scanned sticker; 404 for an unknown code.
+  Future<ReportTruck> formTruckByQr(String token) async {
+    final data = await _api.send((d) => d.get('/incidents/form/trucks/by-qr/$token'));
+    return ReportTruck.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  /// Who a scanned operator card belongs to; 404 for an unknown card.
+  Future<EntryRef> operatorByQr(String token) async {
+    final data = await _api.send((d) => d.get('/incidents/form/operators/by-qr/$token'));
+    final m = (data as Map).cast<String, dynamic>();
+    return EntryRef(m['id'] as int, m['full_name'] as String);
+  }
+
+  /// Files the report; re-sending the same `client_uuid` returns the first one.
+  Future<Incident> create(Map<String, dynamic> report, List<ReportPhoto> photos) async {
+    final data = await _api.send((d) => d.post('/incidents', data: reportForm(report, photos), options: uploadOptions));
     return Incident.fromJson((data as Map).cast<String, dynamic>());
   }
 
