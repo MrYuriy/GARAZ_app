@@ -4,6 +4,8 @@ import '../features/audit/audit_repository.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/auth_repository.dart';
 import '../features/dictionaries/dictionaries_repository.dart';
+import '../features/operators/operators_repository.dart';
+import '../features/permits/permits_repository.dart';
 import '../features/trucks/trucks_repository.dart';
 import '../features/users/users_repository.dart';
 import 'api_client.dart';
@@ -29,5 +31,11 @@ final dictionariesRepositoryProvider = Provider<DictionariesRepository>(
 );
 
 final trucksRepositoryProvider = Provider<TrucksRepository>((ref) => TrucksRepository(ref.watch(apiClientProvider)));
+
+final operatorsRepositoryProvider = Provider<OperatorsRepository>(
+  (ref) => OperatorsRepository(ref.watch(apiClientProvider)),
+);
+
+final permitsRepositoryProvider = Provider<PermitsRepository>((ref) => PermitsRepository(ref.watch(apiClientProvider)));
 
 final auditRepositoryProvider = Provider<AuditRepository>((ref) => AuditRepository(ref.watch(apiClientProvider)));

@@ -64,6 +64,14 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
     'truck.created' => Icons.forklift,
     'truck.updated' => Icons.build_outlined,
     'truck.qr_reissued' => Icons.qr_code_2,
+    'operator.created' => Icons.person_add_alt,
+    'operator.updated' => Icons.manage_accounts_outlined,
+    'operator.qr_reissued' => Icons.qr_code_2,
+    'permit.created' => Icons.verified_outlined,
+    'permit.updated' => Icons.edit_note,
+    'permit.expired' => Icons.event_busy,
+    'permit.document_attached' => Icons.attach_file,
+    'permit.document_removed' => Icons.delete_outline,
     _ => Icons.event_note,
   };
 

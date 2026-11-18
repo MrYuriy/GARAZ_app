@@ -17,3 +17,12 @@ Future<bool> saveBytes(Uint8List bytes, String filename, String mimeType) async 
   Future.delayed(const Duration(seconds: 30), () => web.URL.revokeObjectURL(url));
   return true;
 }
+
+/// Shows [bytes] in a new browser tab (a scanned PDF or photo).
+Future<bool> openBytes(Uint8List bytes, String mimeType) async {
+  final blob = web.Blob([bytes.toJS].toJS, web.BlobPropertyBag(type: mimeType));
+  final url = web.URL.createObjectURL(blob);
+  web.window.open(url, '_blank');
+  Future.delayed(const Duration(minutes: 5), () => web.URL.revokeObjectURL(url));
+  return true;
+}

@@ -121,6 +121,14 @@ class AuditEntry {
     'truck.created' => 'Dodanie wózka',
     'truck.updated' => 'Zmiana wózka',
     'truck.qr_reissued' => 'Nowy kod QR wózka',
+    'operator.created' => 'Dodanie operatora',
+    'operator.updated' => 'Zmiana operatora',
+    'operator.qr_reissued' => 'Nowy kod QR operatora',
+    'permit.created' => 'Dodanie uprawnienia',
+    'permit.updated' => 'Zmiana uprawnienia',
+    'permit.expired' => 'Uprawnienie wygasło',
+    'permit.document_attached' => 'Dołączenie skanu dokumentu',
+    'permit.document_removed' => 'Usunięcie skanu dokumentu',
     _ => action,
   };
 }
@@ -271,5 +279,162 @@ class Truck {
     truckType: EntryRef.fromJson((j['truck_type'] as Map).cast<String, dynamic>()),
     qrUrl: j['qr_url'] as String,
     qrIssuedAt: _date(j['qr_issued_at'])!,
+  );
+}
+
+DateTime _day(Object v) => DateTime.parse(v as String);
+
+/// "2026-11-17", a calendar day (no zone).
+String formatDay(DateTime? d) {
+  if (d == null) return '—';
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${d.year}-${two(d.month)}-${two(d.day)}';
+}
+
+enum PermitStatus {
+  active('ACTIVE', 'Aktywne'),
+  suspended('SUSPENDED', 'Zawieszone'),
+  expired('EXPIRED', 'Wygasłe');
+
+  const PermitStatus(this.api, this.label);
+
+  final String api;
+  final String label;
+
+  static PermitStatus fromApi(String value) => PermitStatus.values.firstWhere((s) => s.api == value);
+}
+
+/// A permit as its operator's record lists it.
+class PermitBrief {
+  const PermitBrief({
+    required this.id,
+    required this.number,
+    required this.status,
+    required this.category,
+    required this.validUntil,
+    required this.truckTypes,
+    required this.daysLeft,
+  });
+
+  final int id;
+  final String number;
+  final PermitStatus status;
+  final EntryRef category;
+  final DateTime validUntil;
+  final List<EntryRef> truckTypes;
+
+  /// 0 on the last valid day, negative once past.
+  final int daysLeft;
+
+  factory PermitBrief.fromJson(Map<String, dynamic> j) => PermitBrief(
+    id: j['id'] as int,
+    number: j['number'] as String,
+    status: PermitStatus.fromApi(j['status'] as String),
+    category: EntryRef.fromJson((j['category'] as Map).cast<String, dynamic>()),
+    validUntil: _day(j['valid_until']),
+    truckTypes: [for (final t in j['truck_types'] as List) EntryRef.fromJson((t as Map).cast<String, dynamic>())],
+    daysLeft: j['days_left'] as int,
+  );
+}
+
+class PermitDocument {
+  const PermitDocument(this.filename, this.contentType, this.size);
+
+  final String filename;
+  final String contentType;
+  final int size;
+}
+
+class Permit extends PermitBrief {
+  const Permit({
+    required super.id,
+    required super.number,
+    required super.status,
+    required super.category,
+    required super.validUntil,
+    required super.truckTypes,
+    required super.daysLeft,
+    required this.operatorId,
+    required this.operatorName,
+    required this.operatorEmployer,
+    required this.issuedOn,
+    required this.basisName,
+    required this.basisNumber,
+    required this.basisDate,
+    required this.document,
+  });
+
+  final int operatorId;
+  final String operatorName;
+  final String? operatorEmployer;
+  final DateTime issuedOn;
+  final String? basisName;
+  final String? basisNumber;
+  final DateTime? basisDate;
+  final PermitDocument? document;
+
+  factory Permit.fromJson(Map<String, dynamic> j) {
+    final brief = PermitBrief.fromJson(j);
+    final op = (j['operator'] as Map).cast<String, dynamic>();
+    final doc = (j['document'] as Map?)?.cast<String, dynamic>();
+    return Permit(
+      id: brief.id,
+      number: brief.number,
+      status: brief.status,
+      category: brief.category,
+      validUntil: brief.validUntil,
+      truckTypes: brief.truckTypes,
+      daysLeft: brief.daysLeft,
+      operatorId: op['id'] as int,
+      operatorName: op['full_name'] as String,
+      operatorEmployer: (op['employer'] as Map?)?['name'] as String?,
+      issuedOn: _day(j['issued_on']),
+      basisName: j['basis_name'] as String?,
+      basisNumber: j['basis_number'] as String?,
+      basisDate: j['basis_date'] == null ? null : _day(j['basis_date']),
+      document: doc == null
+          ? null
+          : PermitDocument(doc['filename'] as String, doc['content_type'] as String, doc['size'] as int),
+    );
+  }
+}
+
+class Operator {
+  const Operator({
+    required this.id,
+    required this.fullName,
+    required this.employer,
+    required this.hysterCardNumber,
+    required this.isActive,
+    required this.site,
+    required this.qrIssuedAt,
+    required this.permits,
+    required this.permitStatus,
+  });
+
+  final int id;
+  final String fullName;
+  final EntryRef? employer;
+  final String? hysterCardNumber;
+  final bool isActive;
+  final EntryRef site;
+  final DateTime qrIssuedAt;
+
+  /// Newest first.
+  final List<PermitBrief> permits;
+
+  /// The best of their permits; null with none.
+  final PermitStatus? permitStatus;
+
+  factory Operator.fromJson(Map<String, dynamic> j) => Operator(
+    id: j['id'] as int,
+    fullName: j['full_name'] as String,
+    employer: j['employer'] == null ? null : EntryRef.fromJson((j['employer'] as Map).cast<String, dynamic>()),
+    hysterCardNumber: j['hyster_card_number'] as String?,
+    isActive: j['is_active'] as bool,
+    site: EntryRef.fromJson((j['site'] as Map).cast<String, dynamic>()),
+    qrIssuedAt: _date(j['qr_issued_at'])!,
+    permits: [for (final p in j['permits'] as List) PermitBrief.fromJson((p as Map).cast<String, dynamic>())],
+    permitStatus: j['permit_status'] == null ? null : PermitStatus.fromApi(j['permit_status'] as String),
   );
 }

@@ -10,12 +10,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Polish Material texts (date picker, dialogs): the interface is Polish only.
+  flutter_localizations:
+    sdk: flutter
   # Same stack as langup_mobile: state, HTTP, secure token storage, routing.
   flutter_riverpod: 2.6.1
   dio: 5.11.0
   flutter_secure_storage: 11.0.0
   go_router: 17.5.0
   web: 1.1.1
+  # Choosing a scanned permit document to upload.
+  file_picker: 13.4.0
 
 dev_dependencies:
   flutter_test:

@@ -8,6 +8,9 @@ import '../features/auth/login_screen.dart';
 import '../features/auth/set_password_screen.dart';
 import '../features/auth/splash_screen.dart';
 import '../features/dictionaries/dictionaries_screen.dart';
+import '../features/operators/operator_screen.dart';
+import '../features/operators/operators_screen.dart';
+import '../features/permits/permits_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/shell/home_shell.dart';
 import '../features/trucks/trucks_screen.dart';
@@ -52,6 +55,23 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [GoRoute(path: '/trucks', builder: (_, _) => const TrucksScreen())],
           ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/operators',
+                builder: (_, _) => const OperatorsScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, state) => OperatorScreen(operatorId: int.parse(state.pathParameters['id']!)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: '/permits', builder: (_, _) => const PermitsScreen())],
+          ),
         ],
       ),
     ],
@@ -67,8 +87,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           // A starting password from the administrator opens nothing else.
           if (auth.user?.mustChangePassword ?? false) return loc == '/set-password' ? null : '/set-password';
           final isAdmin = auth.user?.role.isAdmin ?? false;
-          if (loc == '/splash' || loc == '/login' || loc == '/set-password') return isAdmin ? '/users' : '/account';
-          if (!isAdmin && _adminOnly.any(loc.startsWith)) return '/account';
+          if (loc == '/splash' || loc == '/login' || loc == '/set-password') return '/operators';
+          if (!isAdmin && _adminOnly.any(loc.startsWith)) return '/operators';
           return null;
       }
     },
