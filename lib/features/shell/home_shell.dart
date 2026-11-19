@@ -66,6 +66,12 @@ class HomeShell extends ConsumerWidget {
           : NavigationBar(
               selectedIndex: selected,
               onDestinationSelected: go,
+              // Eight labels do not fit a phone's width (not even the open one's):
+              // icons only; the screen's title says where you are, a long press
+              // shows a tab's name.
+              labelBehavior: tabs.length > 5
+                  ? NavigationDestinationLabelBehavior.alwaysHide
+                  : NavigationDestinationLabelBehavior.alwaysShow,
               destinations: [for (final t in tabs) NavigationDestination(icon: Icon(t.icon), label: t.label)],
             ),
     );
