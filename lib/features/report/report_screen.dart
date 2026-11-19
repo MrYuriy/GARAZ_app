@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/api_client.dart';
@@ -23,6 +24,9 @@ class ReportScreen extends ConsumerStatefulWidget {
 class _ReportScreenState extends ConsumerState<ReportScreen> {
   ReportTruck? _truck;
   String? _loadError;
+
+  /// The code is unknown: loading it again cannot help, scanning another can.
+  bool _unknownCode = false;
 
   String? _operatorToken;
   String? _operatorName;
@@ -51,19 +55,31 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loadError = null);
+    setState(() {
+      _loadError = null;
+      _unknownCode = false;
+    });
     try {
       final truck = await _repo.truck(widget.truckToken);
       _draft.setTruck(truck);
       if (mounted) setState(() => _truck = truck);
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(
-        () => _loadError = e.statusCode == 404
-            ? 'Nie rozpoznano kodu wózka. Naklejka mogła zostać wymieniona — zgłoś to przełożonemu.'
-            : e.message,
-      );
+      setState(() {
+        _unknownCode = e.statusCode == 404;
+        _loadError = _unknownCode
+            ? 'Nie rozpoznano kodu wózka. Zeskanuj naklejkę na wózku jeszcze raz. '
+                  'Jeśli to nie pomoże, naklejka mogła zostać wymieniona — zgłoś to przełożonemu.'
+            : e.message;
+      });
     }
+  }
+
+  /// Another truck code, in place of the unknown one.
+  Future<void> _scanTruck() async {
+    final code = await ScanDialog.open(context, 'Zeskanuj naklejkę wózka');
+    if (code == null || !mounted) return;
+    context.pushReplacement('/t/${Uri.encodeComponent(qrToken(code))}');
   }
 
   Future<void> _scanOperator() async {
@@ -153,7 +169,15 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             const SizedBox(height: 16),
             Text(_loadError!, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: _load, child: const Text('Spróbuj ponownie')),
+            if (_unknownCode)
+              FilledButton.icon(
+                onPressed: _scanTruck,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Zeskanuj ponownie'),
+              )
+            else
+              // No connection or a server error: the same code may load now.
+              OutlinedButton(onPressed: _load, child: const Text('Spróbuj ponownie')),
           ],
         ),
       );
