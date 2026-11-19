@@ -343,8 +343,6 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
 
 /// The token in a scanned code: a sticker holds a link ending in `/t/<token>`,
 /// a card the token itself.
-String qrToken(String code) => RegExp(r'/t/([A-Za-z0-9_-]+)').firstMatch(code)?.group(1) ?? code.trim();
-
 /// A searchable list to pick one item from.
 class _PickDialog<T> extends StatefulWidget {
   const _PickDialog({

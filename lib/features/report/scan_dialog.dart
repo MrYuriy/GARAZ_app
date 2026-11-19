@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+/// The token of a scanned code: a truck sticker carries a link (`…/t/<token>`),
+/// an operator card the bare token.
+String qrToken(String code) => RegExp(r'/t/([A-Za-z0-9_-]+)').firstMatch(code)?.group(1) ?? code.trim();
+
 /// Full-screen camera that pops the first QR code it reads. A text field
 /// below it takes the code by hand, for a camera that will not cooperate.
 class ScanDialog extends StatefulWidget {

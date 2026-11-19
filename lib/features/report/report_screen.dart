@@ -253,6 +253,11 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             icon: const Icon(Icons.add),
             label: const Text('Kolejne zgłoszenie dla tego wózka'),
           ),
+          // Opened from the app's start screen (not from a link): back to it.
+          if (Navigator.of(context).canPop()) ...[
+            const SizedBox(height: 8),
+            FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Gotowe')),
+          ],
         ],
       ),
     );

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
+import '../report/scan_dialog.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -41,6 +43,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  /// An operator (no account) reports from the app: the truck's sticker is
+  /// scanned here instead of with the phone's camera app and a browser.
+  Future<void> _report() async {
+    final code = await ScanDialog.open(context, 'Zeskanuj naklejkę wózka');
+    if (code == null || !mounted) return;
+    context.push('/t/${Uri.encodeComponent(qrToken(code))}');
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -67,7 +77,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 32),
                     TextFormField(
                       controller: _login,
-                      autofocus: true,
+                      // Not on a phone: the keyboard would cover the operators' button.
+                      autofocus: MediaQuery.sizeOf(context).width >= 600,
                       autocorrect: false,
                       autofillHints: const [AutofillHints.username],
                       textInputAction: TextInputAction.next,
@@ -102,6 +113,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: _busy
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                           : const Text('Zaloguj'),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('Operator wózka?', style: theme.textTheme.bodySmall),
+                        ),
+                        const Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: _report,
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Zgłoś zdarzenie — bez logowania'),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Zeskanuj kod QR na wózku, potem swoją kartę operatora.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),
