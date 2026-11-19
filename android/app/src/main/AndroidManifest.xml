@@ -28,6 +28,15 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- A truck's QR sticker (https://garaz.piatek-magazyn.com/t/<token>)
+                 opens the report form here instead of a browser. autoVerify: Android
+                 checks /.well-known/assetlinks.json on that host for this app's key. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="garaz.piatek-magazyn.com" android:pathPrefix="/t/"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
