@@ -141,6 +141,8 @@ class IncidentFields extends StatelessWidget {
           segments: [for (final t in IncidentType.values) ButtonSegment(value: t, label: Text(t.label))],
           selected: {?d.type},
           emptySelectionAllowed: true,
+          // The fill marks the choice; a tick would wrap "Uszkodzenie" on a phone.
+          showSelectedIcon: false,
           onSelectionChanged: enabled ? (s) => s.isEmpty ? null : d.pickType(s.first) : null,
         ),
         const SizedBox(height: 8),
