@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/phone_scale/phone_scale.dart';
 import 'core/providers.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
@@ -37,6 +38,8 @@ class _GarazAppState extends ConsumerState<GarazApp> {
       locale: const Locale('pl'),
       supportedLocales: const [Locale('pl')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      // A phone showing the page as a desktop site still gets a phone-sized app.
+      builder: (_, child) => PhoneScale(child: child!),
     );
   }
 }
