@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/download/download.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/export_button.dart';
 import '../permits/permit_widgets.dart';
 import 'operator_form_dialog.dart';
 
@@ -119,6 +120,13 @@ class _OperatorsScreenState extends ConsumerState<OperatorsScreen> {
               icon: const Icon(Icons.print_outlined),
               label: Text('Karty QR (${_selected.length})'),
             ),
+          ExportButton(
+            path: '/reports/operators.xlsx',
+            query: () => {
+              if (_search.text.trim().isNotEmpty) 'query': _search.text.trim(),
+              if (_onlyActive) 'is_active': true,
+            },
+          ),
           IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
       ),

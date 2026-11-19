@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/download/download.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/export_button.dart';
 import 'truck_form_dialog.dart';
 import 'truck_qr_dialog.dart';
 
@@ -124,6 +125,10 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
               icon: const Icon(Icons.print_outlined),
               label: Text('Etykiety QR (${_selected.length})'),
             ),
+          ExportButton(
+            path: '/reports/trucks.xlsx',
+            query: () => {if (_search.text.trim().isNotEmpty) 'query': _search.text.trim(), 'status': ?_status?.api},
+          ),
           IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
       ),

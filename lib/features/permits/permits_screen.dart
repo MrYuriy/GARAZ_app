@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/export_button.dart';
 import 'permit_dialog.dart';
 import 'permit_widgets.dart';
 
@@ -49,6 +50,20 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
     super.dispose();
   }
 
+  PermitStatus? get _status => switch (_filter) {
+    _Filter.expiring => PermitStatus.active,
+    _Filter.suspended => PermitStatus.suspended,
+    _Filter.expired => PermitStatus.expired,
+    _Filter.all => null,
+  };
+
+  /// The list's filters, for the Excel file.
+  Map<String, dynamic> _exportQuery() => {
+    if (_search.text.trim().isNotEmpty) 'query': _search.text.trim(),
+    'status': ?_status?.api,
+    if (_filter == _Filter.expiring) 'expiring_within_days': expiringSoonDays,
+  };
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -59,12 +74,7 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
           .read(permitsRepositoryProvider)
           .list(
             query: _search.text.trim(),
-            status: switch (_filter) {
-              _Filter.expiring => PermitStatus.active,
-              _Filter.suspended => PermitStatus.suspended,
-              _Filter.expired => PermitStatus.expired,
-              _Filter.all => null,
-            },
+            status: _status,
             expiringWithinDays: _filter == _Filter.expiring ? expiringSoonDays : null,
           );
       if (mounted) setState(() => _page = page);
@@ -94,7 +104,10 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Uprawnienia'),
-        actions: [IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))],
+        actions: [
+          ExportButton(path: '/reports/permits.xlsx', query: _exportQuery),
+          IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+        ],
       ),
       body: Column(
         children: [

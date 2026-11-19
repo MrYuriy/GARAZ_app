@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/export_button.dart';
 import 'incident_widgets.dart';
 
 /// Reports from the operators' phones, newest first.
@@ -77,6 +78,15 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
     _load();
   }
 
+  /// The list's filters, for the Excel file.
+  Map<String, dynamic> _exportQuery() => {
+    if (_search.text.trim().isNotEmpty) 'query': _search.text.trim(),
+    'status': ?_status?.api,
+    'incident_type': ?_type?.api,
+    if (_flaggedOnly) 'flagged': true,
+    if (_openOnly && _status == null) 'open': true,
+  };
+
   Future<void> _open(int id) async {
     await context.push('/incidents/$id');
     await _load();
@@ -100,7 +110,10 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
       ),
       appBar: AppBar(
         title: const Text('Zdarzenia'),
-        actions: [IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))],
+        actions: [
+          ExportButton(path: '/reports/incidents.xlsx', query: _exportQuery),
+          IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+        ],
       ),
       body: Column(
         children: [

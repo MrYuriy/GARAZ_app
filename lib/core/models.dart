@@ -138,6 +138,7 @@ class AuditEntry {
     'permit.expired' => 'Uprawnienie wygasło',
     'permit.document_attached' => 'Dołączenie skanu dokumentu',
     'permit.document_removed' => 'Usunięcie skanu dokumentu',
+    'report.exported' => 'Eksport do Excel',
     _ => action,
   };
 }

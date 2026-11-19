@@ -16,6 +16,7 @@ import '../features/operators/operators_screen.dart';
 import '../features/permits/permits_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/report/report_screen.dart';
+import '../features/reports/reports_screen.dart';
 import '../features/shell/home_shell.dart';
 import '../features/trucks/trucks_screen.dart';
 import '../features/users/users_screen.dart';
@@ -70,8 +71,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/operators',
                 builder: (_, _) => const OperatorsScreen(),
                 routes: [
-                  // Before ':id', which would take "new" for a number.
-                  GoRoute(path: 'new', builder: (_, _) => const NewIncidentScreen()),
                   GoRoute(
                     path: ':id',
                     builder: (_, state) => OperatorScreen(operatorId: int.parse(state.pathParameters['id']!)),
@@ -98,6 +97,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ],
               ),
             ],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen())],
           ),
         ],
       ),

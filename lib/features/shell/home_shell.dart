@@ -17,6 +17,7 @@ const _tabs = [
   _Tab(7, 'Zdarzenia', Icons.report_outlined),
   _Tab(5, 'Operatorzy', Icons.badge_outlined),
   _Tab(6, 'Uprawnienia', Icons.verified_outlined),
+  _Tab(8, 'Raporty', Icons.assessment_outlined),
   _Tab(4, 'Wózki', Icons.forklift),
   _Tab(3, 'Słowniki', Icons.list_alt),
   _Tab(1, 'Użytkownicy', Icons.group_outlined, adminOnly: true),

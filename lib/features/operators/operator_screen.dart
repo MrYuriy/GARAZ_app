@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/export_button.dart';
 import '../../core/widgets/qr_code_dialog.dart';
 import '../permits/permit_dialog.dart';
 import '../permits/permit_widgets.dart';
@@ -100,6 +101,8 @@ class _OperatorScreenState extends ConsumerState<OperatorScreen> {
         actions: [
           if (o != null)
             IconButton(tooltip: 'Kod QR', onPressed: () => _qr(isAdmin), icon: const Icon(Icons.qr_code_2)),
+          if (o != null)
+            ExportButton(path: '/reports/operators/${o.id}/history.xlsx', tooltip: 'Historia operatora (Excel)'),
           if (o != null && isAdmin) IconButton(tooltip: 'Edytuj', onPressed: _edit, icon: const Icon(Icons.edit)),
         ],
       ),
