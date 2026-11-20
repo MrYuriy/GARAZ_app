@@ -136,6 +136,7 @@ class AuditEntry {
     'permit.created' => 'Dodanie uprawnienia',
     'permit.updated' => 'Zmiana uprawnienia',
     'permit.expired' => 'Uprawnienie wygasło',
+    'permit.renewed' => 'Uprawnienie odnowione (nowy numer)',
     'permit.document_attached' => 'Dołączenie skanu dokumentu',
     'permit.document_removed' => 'Usunięcie skanu dokumentu',
     'report.exported' => 'Eksport do Excel',
@@ -335,7 +336,9 @@ String formatDay(DateTime? d) {
 enum PermitStatus {
   active('ACTIVE', 'Aktywne'),
   suspended('SUSPENDED', 'Zawieszone'),
-  expired('EXPIRED', 'Wygasłe');
+  expired('EXPIRED', 'Wygasłe'),
+  // Replaced by a renewal (new number); kept read-only.
+  archived('ARCHIVED', 'Zarchiwizowane');
 
   const PermitStatus(this.api, this.label);
 
@@ -399,6 +402,8 @@ class Permit extends PermitBrief {
     required this.operatorName,
     required this.operatorEmployer,
     required this.issuedOn,
+    required this.udtNumber,
+    required this.replacedById,
     required this.basisName,
     required this.basisNumber,
     required this.basisDate,
@@ -409,6 +414,8 @@ class Permit extends PermitBrief {
   final String operatorName;
   final String? operatorEmployer;
   final DateTime issuedOn;
+  final String? udtNumber;
+  final int? replacedById;
   final String? basisName;
   final String? basisNumber;
   final DateTime? basisDate;
@@ -430,6 +437,8 @@ class Permit extends PermitBrief {
       operatorName: op['full_name'] as String,
       operatorEmployer: (op['employer'] as Map?)?['name'] as String?,
       issuedOn: _day(j['issued_on']),
+      udtNumber: j['udt_number'] as String?,
+      replacedById: j['replaced_by_id'] as int?,
       basisName: j['basis_name'] as String?,
       basisNumber: j['basis_number'] as String?,
       basisDate: j['basis_date'] == null ? null : _day(j['basis_date']),

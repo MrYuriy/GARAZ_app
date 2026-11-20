@@ -75,6 +75,7 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
     'permit.created' => Icons.verified_outlined,
     'permit.updated' => Icons.edit_note,
     'permit.expired' => Icons.event_busy,
+    'permit.renewed' => Icons.autorenew,
     'permit.document_attached' => Icons.attach_file,
     'permit.document_removed' => Icons.delete_outline,
     _ => Icons.event_note,

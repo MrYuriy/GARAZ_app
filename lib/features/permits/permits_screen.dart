@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/download/download.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/export_button.dart';
@@ -13,7 +14,8 @@ enum _Filter {
   all('Wszystkie'),
   expiring('Wygasające ($expiringSoonDays dni)'),
   suspended('Zawieszone'),
-  expired('Wygasłe');
+  expired('Wygasłe'),
+  archived('Archiwum');
 
   const _Filter(this.label);
 
@@ -34,6 +36,9 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
   Timer? _debounce;
   _Filter _filter = _Filter.all;
   PageOf<Permit>? _page;
+  // Chosen for printing.
+  final Set<int> _selected = {};
+  bool _printing = false;
   bool _loading = false;
   String? _error;
 
@@ -54,6 +59,7 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
     _Filter.expiring => PermitStatus.active,
     _Filter.suspended => PermitStatus.suspended,
     _Filter.expired => PermitStatus.expired,
+    _Filter.archived => PermitStatus.archived,
     _Filter.all => null,
   };
 
@@ -77,7 +83,12 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
             status: _status,
             expiringWithinDays: _filter == _Filter.expiring ? expiringSoonDays : null,
           );
-      if (mounted) setState(() => _page = page);
+      if (mounted) {
+        setState(() {
+          _page = page;
+          _selected.retainAll(page.items.where((p) => p.status != PermitStatus.archived).map((p) => p.id));
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
@@ -98,13 +109,45 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
     if (changed == true) await _load();
   }
 
+  Future<void> _printCards() async {
+    setState(() => _printing = true);
+    try {
+      final ids = [
+        for (final p in _page?.items ?? const <Permit>[])
+          if (_selected.contains(p.id)) p.id,
+      ];
+      final pdf = await ref.read(permitsRepositoryProvider).cardsPdf(ids);
+      final saved = await saveBytes(pdf, 'upowaznienia.pdf', 'application/pdf');
+      _snack(saved ? 'Pobrano PDF z upoważnieniami (${ids.length}).' : 'Drukowanie działa w wersji przeglądarkowej.');
+    } catch (e) {
+      _snack(e.toString());
+    } finally {
+      if (mounted) setState(() => _printing = false);
+    }
+  }
+
+  void _snack(String text) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final items = _page?.items ?? const <Permit>[];
+    final printable = [
+      for (final p in items)
+        if (p.status != PermitStatus.archived) p.id,
+    ];
+    final allSelected = printable.isNotEmpty && _selected.length == printable.length;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Uprawnienia'),
         actions: [
+          if (_selected.isNotEmpty)
+            FilledButton.tonalIcon(
+              onPressed: _printing ? null : _printCards,
+              icon: const Icon(Icons.print_outlined),
+              label: Text('Drukuj (${_selected.length})'),
+            ),
           ExportButton(path: '/reports/permits.xlsx', query: _exportQuery),
           IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
@@ -149,6 +192,17 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
               padding: const EdgeInsets.all(16),
               child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ),
+          if (printable.isNotEmpty)
+            CheckboxListTile(
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Zaznacz wszystkie do druku (8 na arkuszu A4)'),
+              value: allSelected,
+              onChanged: (v) => setState(() {
+                _selected.clear();
+                if (v == true) _selected.addAll(printable);
+              }),
+            ),
           Expanded(
             child: items.isEmpty && !_loading
                 ? const Center(child: Text('Brak uprawnień. Nowe dodasz na stronie operatora.'))
@@ -157,8 +211,15 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
                     separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (_, i) {
                       final p = items[i];
+                      final archived = p.status == PermitStatus.archived;
                       return ListTile(
                         onTap: () => _open(p),
+                        leading: Checkbox(
+                          value: _selected.contains(p.id),
+                          onChanged: archived
+                              ? null
+                              : (v) => setState(() => v == true ? _selected.add(p.id) : _selected.remove(p.id)),
+                        ),
                         title: Text('${p.operatorName} · ${p.number}'),
                         subtitle: Text(
                           [p.category.name, p.truckTypes.map((t) => t.name).join(', '), validityText(p)].join(' · '),

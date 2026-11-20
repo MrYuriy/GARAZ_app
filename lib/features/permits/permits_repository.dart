@@ -50,6 +50,24 @@ class PermitsRepository {
     return Permit.fromJson((data as Map).cast<String, dynamic>());
   }
 
+  /// A new permit with the next number; the old one is archived.
+  Future<Permit> renew(int id, Map<String, dynamic> values) async {
+    final data = await _api.send((d) => d.post('/permits/$id/renew', data: values));
+    return Permit.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  /// The permits on form PL-FORM-QHSE-009, eight to an A4 sheet.
+  Future<Uint8List> cardsPdf(List<int> ids) async {
+    final data = await _api.send(
+      (d) => d.get(
+        '/permits/cards.pdf',
+        queryParameters: {'ids': ids},
+        options: Options(responseType: ResponseType.bytes, listFormat: ListFormat.multi),
+      ),
+    );
+    return Uint8List.fromList(data as List<int>);
+  }
+
   Future<Permit> attachDocument(int id, Uint8List bytes, String filename) async {
     final form = FormData.fromMap({'file': MultipartFile.fromBytes(bytes, filename: filename)});
     final data = await _api.send((d) => d.put('/permits/$id/document', data: form));

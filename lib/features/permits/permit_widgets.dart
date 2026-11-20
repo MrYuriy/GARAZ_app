@@ -25,6 +25,7 @@ class PermitStatusChip extends StatelessWidget {
       PermitStatus.active => Colors.green,
       PermitStatus.suspended => Colors.blueGrey,
       PermitStatus.expired => Colors.red,
+      PermitStatus.archived => Colors.grey,
       null => Colors.grey,
     };
     final bg = dark ? base.shade900 : base.shade100;
