@@ -96,7 +96,7 @@ class _OperatorsScreenState extends ConsumerState<OperatorsScreen> {
       ];
       final pdf = await ref.read(operatorsRepositoryProvider).cardsPdf(ids);
       final saved = await saveBytes(pdf, 'karty-operatorow.pdf', 'application/pdf');
-      _snack(saved ? 'Pobrano PDF z kartami (${ids.length}).' : 'Pobieranie działa w wersji przeglądarkowej.');
+      _snack(saved ? 'Pobrano PDF z kartami (${ids.length}).' : 'Nie udało się zapisać pliku.');
     } catch (e) {
       _snack(e.toString());
     } finally {

@@ -1,7 +1,8 @@
-/// Save bytes from the API as a file the user keeps (a PDF of labels, a QR PNG).
+/// Save bytes from the API as a file the user keeps (a PDF of labels, a QR PNG),
+/// or open them in a viewer.
 ///
-/// On the web this is a normal browser download; elsewhere it is not wired yet
-/// (printing is done from the office web panel).
+/// On the web: a browser download or a new tab. On the phone: the share sheet
+/// (save to Drive, send, print) or an installed viewer.
 library;
 
-export 'download_stub.dart' if (dart.library.js_interop) 'download_web.dart';
+export 'download_stub.dart' if (dart.library.js_interop) 'download_web.dart' if (dart.library.io) 'download_io.dart';

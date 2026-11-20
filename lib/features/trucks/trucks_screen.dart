@@ -101,7 +101,7 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
       final ids = items.where((t) => _selected.contains(t.id)).map((t) => t.id).toList();
       final pdf = await ref.read(trucksRepositoryProvider).labelsPdf(ids);
       final saved = await saveBytes(pdf, 'etykiety-wozkow.pdf', 'application/pdf');
-      _snack(saved ? 'Pobrano PDF z etykietami (${ids.length}).' : 'Pobieranie działa w wersji przeglądarkowej.');
+      _snack(saved ? 'Pobrano PDF z etykietami (${ids.length}).' : 'Nie udało się zapisać pliku.');
     } catch (e) {
       _snack(e.toString());
     } finally {

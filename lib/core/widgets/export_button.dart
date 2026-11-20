@@ -29,7 +29,7 @@ class _ExportButtonState extends ConsumerState<ExportButton> {
       final file = await ref.read(reportsRepositoryProvider).xlsx(widget.path, widget.query?.call());
       final saved = await saveBytes(file.bytes, file.filename, xlsxMimeType);
       messenger.showSnackBar(
-        SnackBar(content: Text(saved ? 'Pobrano ${file.filename}.' : 'Pobieranie działa w wersji przeglądarkowej.')),
+        SnackBar(content: Text(saved ? 'Pobrano ${file.filename}.' : 'Nie udało się zapisać pliku.')),
       );
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.toString())));

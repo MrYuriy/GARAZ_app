@@ -62,8 +62,7 @@ class _QrCodeDialogState extends State<QrCodeDialog> {
     if (_png == null) return;
     final saved = await saveBytes(_png!, widget.filename, 'image/png');
     if (!saved && mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Pobieranie działa w wersji przeglądarkowej.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nie udało się zapisać pliku.')));
     }
   }
 

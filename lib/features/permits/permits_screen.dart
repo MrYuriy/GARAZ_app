@@ -118,7 +118,7 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
       ];
       final pdf = await ref.read(permitsRepositoryProvider).cardsPdf(ids);
       final saved = await saveBytes(pdf, 'upowaznienia.pdf', 'application/pdf');
-      _snack(saved ? 'Pobrano PDF z upoważnieniami (${ids.length}).' : 'Drukowanie działa w wersji przeglądarkowej.');
+      _snack(saved ? 'Pobrano PDF z upoważnieniami (${ids.length}).' : 'Nie udało się zapisać pliku.');
     } catch (e) {
       _snack(e.toString());
     } finally {

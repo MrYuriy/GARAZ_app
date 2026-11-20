@@ -190,7 +190,7 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
           opened || await saveBytes(pdf, 'upowaznienie-${p.number.replaceAll('/', '-')}.pdf', 'application/pdf');
       if (!saved && mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Drukowanie działa w wersji przeglądarkowej.')));
+            .showSnackBar(const SnackBar(content: Text('Nie udało się otworzyć ani zapisać pliku.')));
       }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
