@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
+import '../report/outbox.dart';
 import '../report/scan_dialog.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -137,6 +138,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodySmall,
                     ),
+                    const SizedBox(height: 12),
+                    const OutboxBanner(),
                   ],
                 ),
               ),

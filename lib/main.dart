@@ -6,6 +6,7 @@ import 'core/phone_scale/phone_scale.dart';
 import 'core/providers.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'features/report/outbox.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +30,8 @@ class _GarazAppState extends ConsumerState<GarazApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Starts the outbox at launch: reports saved without a signal go out as soon as they can.
+    ref.listen(outboxProvider, (_, _) {});
     return MaterialApp.router(
       title: 'GARAZ',
       debugShowCheckedModeBanner: false,

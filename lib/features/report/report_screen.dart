@@ -7,6 +7,7 @@ import '../../core/api_client.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import 'incident_fields.dart';
+import 'outbox.dart';
 import 'report_repository.dart';
 import 'scan_dialog.dart';
 
@@ -32,6 +33,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   String? _operatorName;
   bool _checkingOperator = false;
 
+  /// Scanned without a signal: the server checks the card when the report goes out.
+  bool _operatorUnchecked = false;
+
   final _draft = IncidentDraft();
 
   /// Made once per report and kept across retries, so a resend is not a second report.
@@ -39,6 +43,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   bool _sending = false;
   String? _error;
   ({int id, bool truckOutOfService})? _sent;
+
+  /// Kept on the phone for later: there was no signal.
+  bool _queued = false;
 
   ReportRepository get _repo => ref.read(reportRepositoryProvider);
 
@@ -94,8 +101,17 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       setState(() {
         _operatorToken = code;
         _operatorName = name;
+        _operatorUnchecked = false;
       });
     } on ApiException catch (e) {
+      if (outboxSupported && isRetryable(e)) {
+        setState(() {
+          _operatorToken = code;
+          _operatorName = 'Karta zeskanowana';
+          _operatorUnchecked = true;
+        });
+        return;
+      }
       setState(() => _error = e.statusCode == 404 ? 'Nie rozpoznano karty operatora. Spróbuj jeszcze raz.' : e.message);
     } finally {
       if (mounted) setState(() => _checkingOperator = false);
@@ -117,16 +133,27 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       _sending = true;
       _error = null;
     });
+    final report = {
+      'client_uuid': _clientUuid,
+      'truck_token': widget.truckToken,
+      'operator_token': _operatorToken,
+      ..._draft.toJson(),
+      'reported_at': DateTime.now().toUtc().toIso8601String(),
+    };
     try {
-      final sent = await _repo.submit({
-        'client_uuid': _clientUuid,
-        'truck_token': widget.truckToken,
-        'operator_token': _operatorToken,
-        ..._draft.toJson(),
-        'reported_at': DateTime.now().toUtc().toIso8601String(),
-      }, _draft.photos);
+      final sent = await _repo.submit(report, _draft.photos);
       if (mounted) setState(() => _sent = sent);
     } on ApiException catch (e) {
+      if (outboxSupported && isRetryable(e)) {
+        try {
+          await ref.read(outboxProvider.notifier).add(report, _draft.photos, _truck!.number);
+          if (mounted) setState(() => _queued = true);
+          return;
+        } catch (_) {
+          // Could not save on the phone either: say so below.
+        }
+      }
+      if (!mounted) return;
       setState(
         () => _error = e.statusCode == 0
             ? 'Brak połączenia. Zgłoszenie nie zostało wysłane — spróbuj ponownie, gdy będzie zasięg.'
@@ -141,6 +168,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   void _again() {
     setState(() {
       _sent = null;
+      _queued = false;
       _clientUuid = const Uuid().v4();
     });
     _draft.clear();
@@ -184,11 +212,21 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     }
     final truck = _truck;
     if (truck == null) return const Center(child: CircularProgressIndicator());
-    if (_sent != null) return _done(context, truck);
+    if (_sent != null || _queued) return _done(context, truck);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
+        const OutboxBanner(),
+        if (truck.offline)
+          Card(
+            color: scheme.secondaryContainer,
+            child: const ListTile(
+              leading: Icon(Icons.signal_wifi_off),
+              title: Text('Brak internetu'),
+              subtitle: Text('Wypełnij zgłoszenie — zapiszemy je na telefonie i wyślemy, gdy wróci zasięg.'),
+            ),
+          ),
         _truckCard(context, truck),
         const SizedBox(height: 12),
         stepTitle(context, '1. Operator'),
@@ -199,7 +237,13 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               color: _operatorName == null ? null : Colors.green,
             ),
             title: Text(_operatorName ?? 'Zeskanuj swoją kartę operatora'),
-            subtitle: _operatorName == null ? const Text('Kod QR na karcie.') : const Text('Karta rozpoznana.'),
+            subtitle: Text(
+              _operatorName == null
+                  ? 'Kod QR na karcie.'
+                  : _operatorUnchecked
+                  ? 'Bez zasięgu — kartę sprawdzimy przy wysyłce.'
+                  : 'Karta rozpoznana.',
+            ),
             trailing: _checkingOperator
                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
                 : FilledButton.tonalIcon(
@@ -247,18 +291,31 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   }
 
   Widget _done(BuildContext context, ReportTruck truck) {
-    final sent = _sent!;
+    final sent = _sent;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle, size: 72, color: Colors.green),
-          const SizedBox(height: 16),
-          Text('Zgłoszenie wysłane', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text('Wózek ${truck.number} · zgłoszenie nr ${sent.id}', textAlign: TextAlign.center),
-          if (sent.truckOutOfService) ...[
+          if (sent == null) ...[
+            const Icon(Icons.schedule_send, size: 72, color: Colors.orange),
+            const SizedBox(height: 16),
+            Text('Zapisano na telefonie', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 8),
+            Text(
+              'Wózek ${truck.number}. Brak internetu — zgłoszenie zostanie wysłane automatycznie, '
+              'gdy telefon połączy się z siecią. Nie odinstalowuj aplikacji do tego czasu.\n\n'
+              'Jeśli wózek jest niesprawny, nie używaj go i powiadom przełożonego.',
+              textAlign: TextAlign.center,
+            ),
+          ] else ...[
+            const Icon(Icons.check_circle, size: 72, color: Colors.green),
+            const SizedBox(height: 16),
+            Text('Zgłoszenie wysłane', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 8),
+            Text('Wózek ${truck.number} · zgłoszenie nr ${sent.id}', textAlign: TextAlign.center),
+          ],
+          if (sent != null && sent.truckOutOfService) ...[
             const SizedBox(height: 16),
             Card(
               color: Theme.of(context).colorScheme.errorContainer,

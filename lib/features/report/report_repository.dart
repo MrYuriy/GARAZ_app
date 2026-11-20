@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/api_client.dart';
 import '../../core/models.dart';
+import 'outbox.dart';
 
 /// A category as the report form offers it.
 class ReportCategory {
@@ -33,6 +34,7 @@ class ReportTruck {
     required this.status,
     required this.lastMth,
     required this.categories,
+    this.offline = false,
   });
 
   final int? id;
@@ -43,7 +45,11 @@ class ReportTruck {
   final double? lastMth;
   final List<ReportCategory> categories;
 
-  factory ReportTruck.fromJson(Map<String, dynamic> j) => ReportTruck(
+  /// Read from this phone's copy: there is no signal now.
+  final bool offline;
+
+  factory ReportTruck.fromJson(Map<String, dynamic> j, {bool offline = false}) => ReportTruck(
+    offline: offline,
     id: j['id'] as int?,
     number: j['number'] as String,
     truckType: j['truck_type'] as String,
@@ -77,8 +83,15 @@ class ReportRepository {
   final ApiClient _api;
 
   Future<ReportTruck> truck(String token) async {
-    final data = await _api.send((d) => d.get('/public/trucks/$token'));
-    return ReportTruck.fromJson((data as Map).cast<String, dynamic>());
+    try {
+      final data = (await _api.send((d) => d.get('/public/trucks/$token')) as Map).cast<String, dynamic>();
+      await TruckCache.save(token, data);
+      return ReportTruck.fromJson(data);
+    } on ApiException catch (e) {
+      final cached = isRetryable(e) ? await TruckCache.read(token) : null;
+      if (cached == null) rethrow;
+      return ReportTruck.fromJson(cached, offline: true);
+    }
   }
 
   /// "Jan K." for the scanned card, or an [ApiException] (404) for an unknown one.
