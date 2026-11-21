@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/filter_bar.dart';
 import 'user_form_dialog.dart';
 
 class UsersScreen extends ConsumerStatefulWidget {
@@ -71,6 +72,11 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     }
   }
 
+  void _setRole(Role? r) {
+    setState(() => _role = r);
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final me = ref.watch(authControllerProvider).user!;
@@ -91,40 +97,22 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           : null,
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                SizedBox(
-                  width: 320,
-                  child: TextField(
-                    controller: _search,
-                    onChanged: _onSearch,
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Szukaj: login, imię, email',
-                    ),
-                  ),
-                ),
-                DropdownButton<Role?>(
-                  value: _role,
-                  hint: const Text('Wszystkie role'),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('Wszystkie role')),
-                    for (final r in Role.values) DropdownMenuItem(value: r, child: Text(r.label)),
-                  ],
-                  onChanged: (r) {
-                    setState(() => _role = r);
-                    _load();
-                  },
-                ),
-                if (_page != null) Text('Razem: ${_page!.total}'),
-              ],
-            ),
+          FilterBar(
+            searchController: _search,
+            onSearch: _onSearch,
+            searchHint: 'Szukaj: login, imię, email',
+            groups: () => [
+              FilterGroup(
+                title: 'Rola',
+                activeLabel: _role?.label,
+                onClear: () => _setRole(null),
+                options: [
+                  for (final r in [null, ...Role.values])
+                    FilterOption(r?.label ?? 'Wszystkie role', selected: _role == r, onSelected: () => _setRole(r)),
+                ],
+              ),
+            ],
+            total: _page?.total,
           ),
           if (_loading) const LinearProgressIndicator(),
           if (_error != null)

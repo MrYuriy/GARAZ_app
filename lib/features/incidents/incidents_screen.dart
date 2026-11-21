@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/export_button.dart';
+import '../../core/widgets/filter_bar.dart';
 import 'incident_widgets.dart';
 
 /// Reports from the operators' phones, newest first.
@@ -70,6 +71,11 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
     _debounce = Timer(const Duration(milliseconds: 350), _load);
   }
 
+  void _setType(IncidentType? t) {
+    setState(() => _type = t);
+    _load();
+  }
+
   void _setStatus({IncidentStatus? status, bool open = false}) {
     setState(() {
       _status = status;
@@ -117,65 +123,50 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                SizedBox(
-                  width: 280,
-                  child: TextField(
-                    controller: _search,
-                    onChanged: _onSearch,
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Szukaj: nr wózka, operator',
+          FilterBar(
+            searchController: _search,
+            onSearch: _onSearch,
+            searchHint: 'Szukaj: nr wózka, operator',
+            groups: () => [
+              FilterGroup(
+                title: 'Status',
+                activeLabel: _status?.label ?? (_openOnly ? null : 'Wszystkie'),
+                onClear: () => _setStatus(open: true),
+                options: [
+                  FilterOption(
+                    'Otwarte',
+                    selected: _openOnly && _status == null,
+                    onSelected: () => _setStatus(open: true),
+                  ),
+                  for (final s in IncidentStatus.values)
+                    FilterOption(
+                      s.label,
+                      selected: _status == s,
+                      onSelected: () => _setStatus(status: s),
                     ),
-                  ),
-                ),
-                ChoiceChip(
-                  label: const Text('Otwarte'),
-                  selected: _openOnly && _status == null,
-                  onSelected: (_) => _setStatus(open: true),
-                ),
-                for (final s in IncidentStatus.values)
-                  ChoiceChip(
-                    label: Text(s.label),
-                    selected: _status == s,
-                    onSelected: (_) => _setStatus(status: s),
-                  ),
-                ChoiceChip(
-                  label: const Text('Wszystkie'),
-                  selected: !_openOnly && _status == null,
-                  onSelected: (_) => _setStatus(),
-                ),
-                DropdownButton<IncidentType?>(
-                  value: _type,
-                  hint: const Text('Każdy rodzaj'),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('Każdy rodzaj')),
-                    for (final t in IncidentType.values) DropdownMenuItem(value: t, child: Text(t.label)),
-                  ],
-                  onChanged: (t) {
-                    setState(() => _type = t);
-                    _load();
-                  },
-                ),
-                FilterChip(
-                  avatar: const Icon(Icons.warning_amber, size: 18),
-                  label: const Text('Z uwagami'),
-                  selected: _flaggedOnly,
-                  onSelected: (v) {
-                    setState(() => _flaggedOnly = v);
-                    _load();
-                  },
-                ),
-                if (_page != null) Text('Razem: ${_page!.total}'),
-              ],
-            ),
+                  FilterOption('Wszystkie', selected: !_openOnly && _status == null, onSelected: _setStatus),
+                ],
+              ),
+              FilterGroup(
+                title: 'Rodzaj',
+                activeLabel: _type?.label,
+                onClear: () => _setType(null),
+                options: [
+                  for (final t in [null, ...IncidentType.values])
+                    FilterOption(t?.label ?? 'Każdy rodzaj', selected: _type == t, onSelected: () => _setType(t)),
+                ],
+              ),
+              FilterGroup.toggle(
+                title: 'Z uwagami',
+                value: _flaggedOnly,
+                activeLabel: _flaggedOnly ? 'Z uwagami' : null,
+                onChanged: (v) {
+                  setState(() => _flaggedOnly = v);
+                  _load();
+                },
+              ),
+            ],
+            total: _page?.total,
           ),
           if (_loading) const LinearProgressIndicator(),
           if (_error != null)

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/filter_bar.dart';
 import '../trucks/truck_catalog_view.dart';
 
 /// The panel's lists. Everyone signed in reads them; administrators edit.
@@ -94,24 +95,35 @@ class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final k in DictionaryKind.values) ...[
-                  ChoiceChip(label: Text(k.label), selected: !_catalog && k == _kind, onSelected: (_) => _select(k)),
-                  // Next to truck types, where it belongs.
-                  if (k == DictionaryKind.truckTypes)
-                    ChoiceChip(
-                      label: const Text('Producenci i modele'),
-                      selected: _catalog,
-                      onSelected: (_) => setState(() => _catalog = true),
-                    ),
+          FilterBar(
+            pickerLabel: _catalog ? 'Producenci i modele' : _kind.label,
+            groups: () => [
+              FilterGroup(
+                title: 'Słownik',
+                options: [
+                  for (final k in DictionaryKind.values) ...[
+                    FilterOption(k.label, selected: !_catalog && k == _kind, onSelected: () => _select(k)),
+                    // Next to truck types, where it belongs.
+                    if (k == DictionaryKind.truckTypes)
+                      FilterOption(
+                        'Producenci i modele',
+                        selected: _catalog,
+                        onSelected: () => setState(() => _catalog = true),
+                      ),
+                  ],
                 ],
-              ],
-            ),
+              ),
+              if (!_catalog)
+                FilterGroup.toggle(
+                  title: 'Pokaż wyłączone',
+                  value: _showInactive,
+                  activeLabel: _showInactive ? 'Z wyłączonymi' : null,
+                  onChanged: (v) {
+                    setState(() => _showInactive = v);
+                    _load();
+                  },
+                ),
+            ],
           ),
           if (_catalog) Expanded(child: TruckCatalogView(canEdit: canEdit)),
           if (!_catalog) ..._listBody(canEdit, scheme),
@@ -122,15 +134,6 @@ class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
 
   List<Widget> _listBody(bool canEdit, ColorScheme scheme) {
     return [
-      SwitchListTile(
-        dense: true,
-        title: const Text('Pokaż wyłączone'),
-        value: _showInactive,
-        onChanged: (v) {
-          setState(() => _showInactive = v);
-          _load();
-        },
-      ),
       if (_loading) const LinearProgressIndicator(),
       if (_error != null)
         Padding(

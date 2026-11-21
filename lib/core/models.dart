@@ -240,6 +240,19 @@ enum TruckStatus {
   final String api;
   final String label;
 
+  /// For a status label in a list row.
+  String get shortLabel => switch (this) {
+    TruckStatus.outOfService => 'Wyłączony',
+    _ => label,
+  };
+
+  /// For a filter: the trucks in this status.
+  String get filterLabel => switch (this) {
+    TruckStatus.active => 'Aktywne',
+    TruckStatus.outOfService => 'Wyłączone',
+    TruckStatus.inactive => 'Nieaktywne',
+  };
+
   static TruckStatus fromApi(String value) => TruckStatus.values.firstWhere((s) => s.api == value);
 }
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/filter_bar.dart';
 
 class IncidentStatusChip extends StatelessWidget {
   const IncidentStatusChip({super.key, required this.status});
@@ -13,19 +14,13 @@ class IncidentStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = switch (status) {
-      IncidentStatus.newReport => (Colors.red.shade50, Colors.red.shade800),
-      IncidentStatus.inProgress => (Colors.amber.shade100, Colors.brown.shade800),
-      IncidentStatus.closed => (Colors.green.shade50, Colors.green.shade800),
-    };
-    return Chip(
-      label: Text(
-        status.label,
-        style: TextStyle(color: fg, fontWeight: FontWeight.w600),
-      ),
-      backgroundColor: bg,
-      side: BorderSide.none,
-      visualDensity: VisualDensity.compact,
+    return StatusPill(
+      label: status.label,
+      color: switch (status) {
+        IncidentStatus.newReport => Colors.red,
+        IncidentStatus.inProgress => Colors.amber,
+        IncidentStatus.closed => Colors.green,
+      },
     );
   }
 }

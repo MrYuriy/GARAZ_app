@@ -8,6 +8,7 @@ import '../../core/download/download.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/export_button.dart';
+import '../../core/widgets/filter_bar.dart';
 import '../permits/permit_widgets.dart';
 import 'operator_form_dialog.dart';
 
@@ -139,36 +140,22 @@ class _OperatorsScreenState extends ConsumerState<OperatorsScreen> {
           : null,
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                SizedBox(
-                  width: 300,
-                  child: TextField(
-                    controller: _search,
-                    onChanged: _onSearch,
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Szukaj: nazwisko, nr karty Hyster',
-                    ),
-                  ),
-                ),
-                FilterChip(
-                  label: const Text('Tylko aktywni'),
-                  selected: _onlyActive,
-                  onSelected: (v) {
-                    setState(() => _onlyActive = v);
-                    _load();
-                  },
-                ),
-                if (_page != null) Text('Razem: ${_page!.total}'),
-              ],
-            ),
+          FilterBar(
+            searchController: _search,
+            onSearch: _onSearch,
+            searchHint: 'Szukaj: nazwisko, nr karty Hyster',
+            groups: () => [
+              FilterGroup.toggle(
+                title: 'Tylko aktywni',
+                value: _onlyActive,
+                activeLabel: _onlyActive ? null : 'Także nieaktywni',
+                onChanged: (v) {
+                  setState(() => _onlyActive = v);
+                  _load();
+                },
+              ),
+            ],
+            total: _page?.total,
           ),
           if (_loading || _printing) const LinearProgressIndicator(),
           if (_error != null)

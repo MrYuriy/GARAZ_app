@@ -7,6 +7,7 @@ import '../../core/download/download.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/export_button.dart';
+import '../../core/widgets/filter_bar.dart';
 import 'permit_dialog.dart';
 import 'permit_widgets.dart';
 
@@ -130,6 +131,11 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
+  void _setFilter(_Filter f) {
+    setState(() => _filter = f);
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final items = _page?.items ?? const <Permit>[];
@@ -154,37 +160,22 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                SizedBox(
-                  width: 300,
-                  child: TextField(
-                    controller: _search,
-                    onChanged: _onSearch,
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Szukaj: nr pozwolenia, nazwisko',
-                    ),
-                  ),
-                ),
-                for (final f in _Filter.values)
-                  ChoiceChip(
-                    label: Text(f.label),
-                    selected: _filter == f,
-                    onSelected: (_) {
-                      setState(() => _filter = f);
-                      _load();
-                    },
-                  ),
-                if (_page != null) Text('Razem: ${_page!.total}'),
-              ],
-            ),
+          FilterBar(
+            searchController: _search,
+            onSearch: _onSearch,
+            searchHint: 'Szukaj: nr pozwolenia, nazwisko',
+            groups: () => [
+              FilterGroup(
+                title: 'Pokaż',
+                activeLabel: _filter == _Filter.all ? null : _filter.label,
+                onClear: () => _setFilter(_Filter.all),
+                options: [
+                  for (final f in _Filter.values)
+                    FilterOption(f.label, selected: _filter == f, onSelected: () => _setFilter(f)),
+                ],
+              ),
+            ],
+            total: _page?.total,
           ),
           if (_loading) const LinearProgressIndicator(),
           if (_error != null)

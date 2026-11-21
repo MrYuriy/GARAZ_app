@@ -7,6 +7,7 @@ import '../../core/download/download.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/export_button.dart';
+import '../../core/widgets/filter_bar.dart';
 import 'truck_form_dialog.dart';
 import 'truck_qr_dialog.dart';
 
@@ -109,6 +110,11 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
     }
   }
 
+  void _setStatus(TruckStatus? s) {
+    setState(() => _status = s);
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isAdmin = ref.watch(authControllerProvider).user?.role.isAdmin ?? false;
@@ -141,40 +147,26 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
           : null,
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                SizedBox(
-                  width: 300,
-                  child: TextField(
-                    controller: _search,
-                    onChanged: _onSearch,
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Szukaj: numer, producent, model',
+          FilterBar(
+            searchController: _search,
+            onSearch: _onSearch,
+            searchHint: 'Szukaj: numer, producent, model',
+            groups: () => [
+              FilterGroup(
+                title: 'Status',
+                activeLabel: _status?.filterLabel,
+                onClear: () => _setStatus(null),
+                options: [
+                  for (final s in [null, ...TruckStatus.values])
+                    FilterOption(
+                      s?.filterLabel ?? 'Wszystkie',
+                      selected: _status == s,
+                      onSelected: () => _setStatus(s),
                     ),
-                  ),
-                ),
-                DropdownButton<TruckStatus?>(
-                  value: _status,
-                  hint: const Text('Wszystkie statusy'),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('Wszystkie statusy')),
-                    for (final s in TruckStatus.values) DropdownMenuItem(value: s, child: Text(s.label)),
-                  ],
-                  onChanged: (s) {
-                    setState(() => _status = s);
-                    _load();
-                  },
-                ),
-                if (_page != null) Text('Razem: ${_page!.total}'),
-              ],
-            ),
+                ],
+              ),
+            ],
+            total: _page?.total,
           ),
           if (_loading || _printing) const LinearProgressIndicator(),
           if (_error != null)
@@ -232,30 +224,45 @@ class _TruckTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final (Color bg, Color fg) = switch (truck.status) {
-      TruckStatus.active => (scheme.primaryContainer, scheme.onPrimaryContainer),
-      TruckStatus.outOfService => (scheme.errorContainer, scheme.onErrorContainer),
-      TruckStatus.inactive => (scheme.surfaceContainerHighest, scheme.outline),
-    };
     return ListTile(
       onTap: onTap,
       leading: Checkbox(value: selected, onChanged: (v) => onSelect(v ?? false)),
-      title: Text(truck.number, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              truck.number,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          TruckStatusPill(status: truck.status),
+        ],
+      ),
       subtitle: Text(
         [truck.truckType.name, if (truck.makeAndModel.isNotEmpty) truck.makeAndModel, truck.site.name].join(' · '),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Chip(
-            label: Text(truck.status.label, style: TextStyle(color: fg)),
-            backgroundColor: bg,
-            side: BorderSide.none,
-          ),
-          IconButton(tooltip: 'Kod QR', onPressed: onQr, icon: const Icon(Icons.qr_code_2)),
-        ],
-      ),
+      trailing: IconButton(tooltip: 'Kod QR', onPressed: onQr, icon: const Icon(Icons.qr_code_2)),
     );
   }
+}
+
+/// "Aktywny" / "Wyłączony" / "Nieaktywny" — short enough for a list row; the
+/// full wording is in the tooltip.
+class TruckStatusPill extends StatelessWidget {
+  const TruckStatusPill({super.key, required this.status});
+
+  final TruckStatus status;
+
+  @override
+  Widget build(BuildContext context) => StatusPill(
+    label: status.shortLabel,
+    tooltip: status.label,
+    color: switch (status) {
+      TruckStatus.active => Colors.green,
+      TruckStatus.outOfService => Colors.red,
+      TruckStatus.inactive => Colors.grey,
+    },
+  );
 }

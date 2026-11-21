@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models.dart';
+import '../../core/widgets/filter_bar.dart';
 
 /// Within this many days a permit counts as expiring (raport "wygasające uprawnienia").
 const expiringSoonDays = 30;
@@ -16,25 +17,18 @@ class PermitStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final soon = status == PermitStatus.active && daysLeft != null && daysLeft! <= expiringSoonDays;
-    // Fixed colours, not the theme's: green / amber / red must read the same
-    // on every screen, and the brand colour is amber already.
-    final MaterialColor base = switch (status) {
-      PermitStatus.active when soon => Colors.amber,
-      PermitStatus.active => Colors.green,
-      PermitStatus.suspended => Colors.blueGrey,
-      PermitStatus.expired => Colors.red,
-      PermitStatus.archived => Colors.grey,
-      null => Colors.grey,
-    };
-    final bg = dark ? base.shade900 : base.shade100;
-    final fg = dark ? base.shade100 : base.shade900;
-    return Chip(
-      label: Text(status?.label ?? 'Brak uprawnień', style: TextStyle(color: fg)),
-      backgroundColor: bg,
-      side: BorderSide.none,
-      visualDensity: VisualDensity.compact,
+    // The brand colour is amber already, so "expiring" amber is a status colour here.
+    return StatusPill(
+      label: status?.label ?? 'Brak uprawnień',
+      color: switch (status) {
+        PermitStatus.active when soon => Colors.amber,
+        PermitStatus.active => Colors.green,
+        PermitStatus.suspended => Colors.blueGrey,
+        PermitStatus.expired => Colors.red,
+        PermitStatus.archived => Colors.grey,
+        null => Colors.grey,
+      },
     );
   }
 }
