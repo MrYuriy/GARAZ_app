@@ -11,6 +11,7 @@ import 'outbox.dart';
 import 'report_repository.dart';
 import 'scan_dialog.dart';
 import '../../core/i18n.dart';
+import '../../core/widgets/forklift_loader.dart';
 
 /// What a truck's sticker opens (`/t/<token>`): the operator scans their own
 /// card, fills in the form, adds photos and sends. No sign-in.
@@ -216,7 +217,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       );
     }
     final truck = _truck;
-    if (truck == null) return const Center(child: CircularProgressIndicator());
+    if (truck == null) return const Center(child: ForkliftLoader());
     if (_sent != null || _queued) return _done(context, truck);
 
     return ListView(

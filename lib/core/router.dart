@@ -22,10 +22,12 @@ import '../features/trucks/trucks_screen.dart';
 import '../features/users/users_screen.dart';
 import 'providers.dart';
 
-/// Re-runs the router's redirect whenever the session changes.
+/// Re-runs the router's redirect whenever the session changes, and when the
+/// start screen's animation has played through.
 class _AuthRefresh extends ChangeNotifier {
   _AuthRefresh(Ref ref) {
     ref.listen(authControllerProvider, (_, _) => notifyListeners());
+    ref.listen(splashShownProvider, (_, _) => notifyListeners());
   }
 }
 
@@ -109,6 +111,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       // Operators have no accounts: the report form never waits for or needs a session.
       if (loc.startsWith('/t/')) return null;
+      // The start screen stays until its animation has played through once.
+      if (loc == '/splash' && !ref.read(splashShownProvider)) return null;
       switch (auth.status) {
         case AuthStatus.unknown:
           return loc == '/splash' ? null : '/splash';
