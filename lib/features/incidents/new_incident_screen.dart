@@ -10,6 +10,7 @@ import '../../core/providers.dart';
 import '../report/incident_fields.dart';
 import '../report/report_repository.dart';
 import '../report/scan_dialog.dart';
+import '../../core/i18n.dart';
 
 /// A report entered by a signed-in user for someone else: after a phone call,
 /// for an operator without their card, or for a person outside the register.
@@ -64,11 +65,11 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
   }
 
   Future<void> _scanTruck() async {
-    final code = await ScanDialog.open(context, 'Zeskanuj naklejkę wózka');
+    final code = await ScanDialog.open(context, tr('Zeskanuj naklejkę wózka'));
     if (code == null || !mounted) return;
     await _setTruck(
       ref.read(incidentsRepositoryProvider).formTruckByQr(qrToken(code)),
-      notFound: 'Nie rozpoznano kodu wózka (nieznany, wymieniony albo wózek wycofany).',
+      notFound: tr('Nie rozpoznano kodu wózka (nieznany, wymieniony albo wózek wycofany).'),
     );
   }
 
@@ -76,8 +77,8 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
     final picked = await showDialog<Truck>(
       context: context,
       builder: (_) => _PickDialog<Truck>(
-        title: 'Wybierz wózek',
-        hint: 'Szukaj: numer wózka',
+        title: tr('Wybierz wózek'),
+        hint: tr('Szukaj: numer wózka'),
         load: (q) async {
           final page = await ref.read(trucksRepositoryProvider).list(query: q, limit: 50);
           return page.items.where((t) => t.status != TruckStatus.inactive).toList();
@@ -87,18 +88,18 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
       ),
     );
     if (picked == null || !mounted) return;
-    await _setTruck(ref.read(incidentsRepositoryProvider).formTruck(picked.id), notFound: 'Wózek jest wycofany.');
+    await _setTruck(ref.read(incidentsRepositoryProvider).formTruck(picked.id), notFound: tr('Wózek jest wycofany.'));
   }
 
   Future<void> _scanOperator() async {
-    final code = await ScanDialog.open(context, 'Zeskanuj kartę operatora');
+    final code = await ScanDialog.open(context, tr('Zeskanuj kartę operatora'));
     if (code == null || !mounted) return;
     setState(() => _error = null);
     try {
       final op = await ref.read(incidentsRepositoryProvider).operatorByQr(qrToken(code));
       if (mounted) setState(() => _operator = op);
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.statusCode == 404 ? 'Nie rozpoznano karty operatora.' : e.message);
+      if (mounted) setState(() => _error = e.statusCode == 404 ? tr('Nie rozpoznano karty operatora.') : e.message);
     }
   }
 
@@ -106,8 +107,8 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
     final picked = await showDialog<Operator>(
       context: context,
       builder: (_) => _PickDialog<Operator>(
-        title: 'Wybierz operatora',
-        hint: 'Szukaj: imię i nazwisko',
+        title: tr('Wybierz operatora'),
+        hint: tr('Szukaj: imię i nazwisko'),
         load: (q) async => (await ref.read(operatorsRepositoryProvider).list(query: q, limit: 50)).items,
         label: (o) => o.fullName,
         subtitle: (o) =>
@@ -134,10 +135,10 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
   }
 
   String? get _missing {
-    if (_truck == null) return 'Wybierz wózek.';
-    if (_mode == _DriverMode.registered && _operator == null) return 'Wybierz operatora.';
+    if (_truck == null) return tr('Wybierz wózek.');
+    if (_mode == _DriverMode.registered && _operator == null) return tr('Wybierz operatora.');
     if (_mode == _DriverMode.unregistered && _driverName.text.trim().isEmpty) {
-      return 'Wpisz imię i nazwisko osoby, która jechała.';
+      return tr('Wpisz imię i nazwisko osoby, która jechała.');
     }
     return _draft.missing(photoRequired: false);
   }
@@ -163,7 +164,7 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
       }, _draft.photos);
       if (mounted) Navigator.of(context).pop(saved.id);
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.statusCode == 0 ? 'Brak połączenia. Spróbuj ponownie.' : e.message);
+      if (mounted) setState(() => _error = e.statusCode == 0 ? tr('Brak połączenia. Spróbuj ponownie.') : e.message);
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -173,32 +174,32 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Dodaj zgłoszenie')),
+      appBar: AppBar(title: Text(tr('Dodaj zgłoszenie'))),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              stepTitle(context, '1. Wózek'),
+              stepTitle(context, tr('1. Wózek')),
               _truckCard(),
               const SizedBox(height: 12),
-              stepTitle(context, '2. Kto jechał?'),
+              stepTitle(context, tr('2. Kto jechał?')),
               _driverCard(),
               const SizedBox(height: 12),
-              stepTitle(context, '3. Kiedy?'),
+              stepTitle(context, tr('3. Kiedy?')),
               Card(
                 child: ListTile(
                   leading: const Icon(Icons.schedule),
                   title: Text(formatDateTime(_occurredAt)),
-                  subtitle: const Text('Czas zdarzenia, jeśli wpisujesz je później.'),
-                  trailing: TextButton(onPressed: _sending ? null : _pickTime, child: const Text('Zmień')),
+                  subtitle: Text(tr('Czas zdarzenia, jeśli wpisujesz je później.')),
+                  trailing: TextButton(onPressed: _sending ? null : _pickTime, child: Text(tr('Zmień'))),
                 ),
               ),
               const SizedBox(height: 12),
               if (_truck == null)
                 Text(
-                  'Rodzaj, kategoria i zdjęcia — po wybraniu wózka.',
+                  tr('Rodzaj, kategoria i zdjęcia — po wybraniu wózka.'),
                   style: TextStyle(color: scheme.onSurfaceVariant),
                 )
               else
@@ -220,7 +221,7 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
               FilledButton.icon(
                 onPressed: _sending ? null : _send,
                 icon: const Icon(Icons.save),
-                label: Text(_sending ? 'Zapisywanie…' : 'Zapisz zgłoszenie'),
+                label: Text(_sending ? tr('Zapisywanie…') : tr('Zapisz zgłoszenie')),
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
               ),
             ],
@@ -240,16 +241,16 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
             ListTile(
               leading: Icon(Icons.forklift, size: 32, color: t == null ? null : Colors.green),
               title: Text(
-                t == null ? 'Nie wybrano wózka' : 'Wózek ${t.number}',
+                t == null ? tr('Nie wybrano wózka') : tr('Wózek {number}', {'number': t.number}),
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               subtitle: t == null
-                  ? const Text('Zeskanuj naklejkę albo wybierz z listy.')
+                  ? Text(tr('Zeskanuj naklejkę albo wybierz z listy.'))
                   : Text(
                       [
                         t.truckType,
                         ?t.make,
-                        if (t.status == TruckStatus.outOfService) 'już wyłączony z eksploatacji',
+                        if (t.status == TruckStatus.outOfService) tr('już wyłączony z eksploatacji'),
                       ].join(' · '),
                     ),
               trailing: _loadingTruck
@@ -260,12 +261,12 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
               FilledButton.tonalIcon(
                 onPressed: _sending ? null : _scanTruck,
                 icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Skanuj'),
+                label: Text(tr('Skanuj')),
               ),
               OutlinedButton.icon(
                 onPressed: _sending ? null : _pickTruck,
                 icon: const Icon(Icons.list),
-                label: const Text('Wybierz z listy'),
+                label: Text(tr('Wybierz z listy')),
               ),
             ]),
           ],
@@ -282,12 +283,16 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SegmentedButton<_DriverMode>(
-              segments: const [
-                ButtonSegment(value: _DriverMode.registered, icon: Icon(Icons.badge_outlined), label: Text('Operator')),
+              segments: [
+                ButtonSegment(
+                  value: _DriverMode.registered,
+                  icon: Icon(Icons.badge_outlined),
+                  label: Text(tr('Operator')),
+                ),
                 ButtonSegment(
                   value: _DriverMode.unregistered,
                   icon: Icon(Icons.person_outline),
-                  label: Text('Osoba spoza listy'),
+                  label: Text(tr('Osoba spoza listy')),
                 ),
               ],
               selected: {_mode},
@@ -301,19 +306,19 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
                   _operator == null ? Icons.badge_outlined : Icons.check_circle,
                   color: _operator == null ? null : Colors.green,
                 ),
-                title: Text(_operator?.name ?? 'Nie wybrano operatora'),
-                subtitle: _operator == null ? const Text('Zeskanuj jego kartę albo wybierz z listy.') : null,
+                title: Text(_operator?.name ?? tr('Nie wybrano operatora')),
+                subtitle: _operator == null ? Text(tr('Zeskanuj jego kartę albo wybierz z listy.')) : null,
               ),
               _actions([
                 FilledButton.tonalIcon(
                   onPressed: _sending ? null : _scanOperator,
                   icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('Skanuj kartę'),
+                  label: Text(tr('Skanuj kartę')),
                 ),
                 OutlinedButton.icon(
                   onPressed: _sending ? null : _pickOperator,
                   icon: const Icon(Icons.list),
-                  label: const Text('Wybierz z listy'),
+                  label: Text(tr('Wybierz z listy')),
                 ),
               ]),
             ] else ...[
@@ -322,9 +327,9 @@ class _NewIncidentScreenState extends ConsumerState<NewIncidentScreen> {
                 enabled: !_sending,
                 maxLength: 128,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Imię i nazwisko',
-                  helperText: 'Ktoś bez uprawnień albo spoza rejestru. Zgłoszenie dostanie oznaczenie.',
+                decoration: InputDecoration(
+                  labelText: tr('Imię i nazwisko'),
+                  helperText: tr('Ktoś bez uprawnień albo spoza rejestru. Zgłoszenie dostanie oznaczenie.'),
                   helperMaxLines: 2,
                 ),
               ),
@@ -422,7 +427,7 @@ class _PickDialogState<T> extends State<_PickDialog<T>> {
                   : items == null
                   ? const Center(child: CircularProgressIndicator())
                   : items.isEmpty
-                  ? const Center(child: Text('Nic nie znaleziono.'))
+                  ? Center(child: Text(tr('Nic nie znaleziono.')))
                   : ListView.builder(
                       itemCount: items.length,
                       itemBuilder: (_, i) => ListTile(
@@ -435,7 +440,7 @@ class _PickDialogState<T> extends State<_PickDialog<T>> {
           ],
         ),
       ),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Anuluj'))],
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('Anuluj')))],
     );
   }
 }

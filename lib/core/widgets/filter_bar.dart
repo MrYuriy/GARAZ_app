@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../i18n.dart';
+
 /// Below this width the filters hide behind an icon in the search field.
 const _narrow = 720.0;
 
@@ -71,7 +73,9 @@ class FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final count = total == null ? null : Text('Razem: $total', style: Theme.of(context).textTheme.bodySmall);
+    final count = total == null
+        ? null
+        : Text(tr('Razem: {total}', {'total': total}), style: Theme.of(context).textTheme.bodySmall);
     return LayoutBuilder(
       builder: (context, box) => box.maxWidth >= _narrow ? _wide(context, count) : _phone(context, count),
     );
@@ -126,7 +130,7 @@ class FilterBar extends StatelessWidget {
                             label: Text(g.activeLabel!),
                             onPressed: () => _openSheet(context),
                             onDeleted: g.onClear,
-                            deleteButtonTooltipMessage: 'Usuń filtr',
+                            deleteButtonTooltipMessage: tr('Usuń filtr'),
                             visualDensity: VisualDensity.compact,
                           ),
                       ],
@@ -152,7 +156,7 @@ class FilterBar extends StatelessWidget {
         hintText: searchHint,
         suffixIcon: withIcon && groups().isNotEmpty
             ? IconButton(
-                tooltip: 'Filtry',
+                tooltip: tr('Filtry'),
                 onPressed: () => _openSheet(context),
                 icon: Badge(
                   isLabelVisible: badge > 0,
@@ -174,7 +178,7 @@ class FilterBar extends StatelessWidget {
       onTap: () => _openSheet(context),
       child: InputDecorator(
         decoration: const InputDecoration(isDense: true, suffixIcon: Icon(Icons.tune)),
-        child: Text(pickerLabel ?? 'Filtry', style: Theme.of(context).textTheme.titleMedium),
+        child: Text(pickerLabel ?? tr('Filtry'), style: Theme.of(context).textTheme.titleMedium),
       ),
     );
   }
@@ -224,7 +228,7 @@ class FilterBar extends StatelessWidget {
                   ],
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    child: FilledButton(onPressed: () => Navigator.pop(sheetContext), child: const Text('Gotowe')),
+                    child: FilledButton(onPressed: () => Navigator.pop(sheetContext), child: Text(tr('Gotowe'))),
                   ),
                 ],
               ),

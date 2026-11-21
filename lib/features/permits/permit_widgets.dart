@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/models.dart';
 import '../../core/widgets/filter_bar.dart';
+import '../../core/i18n.dart';
 
 /// Within this many days a permit counts as expiring (raport "wygasające uprawnienia").
 const expiringSoonDays = 30;
@@ -20,7 +21,7 @@ class PermitStatusChip extends StatelessWidget {
     final soon = status == PermitStatus.active && daysLeft != null && daysLeft! <= expiringSoonDays;
     // The brand colour is amber already, so "expiring" amber is a status colour here.
     return StatusPill(
-      label: status?.label ?? 'Brak uprawnień',
+      label: status?.label ?? tr('Brak uprawnień'),
       color: switch (status) {
         PermitStatus.active when soon => Colors.amber,
         PermitStatus.active => Colors.green,
@@ -36,11 +37,11 @@ class PermitStatusChip extends StatelessWidget {
 /// "ważne do 2027-03-31 (za 12 dni)" — "dni" fits every count but 1, which is said in words.
 String validityText(PermitBrief p) {
   final when = switch (p.daysLeft) {
-    0 => 'ostatni dzień',
-    1 => 'jutro ostatni dzień',
-    > 1 => 'za ${p.daysLeft} dni',
+    0 => tr('ostatni dzień'),
+    1 => tr('jutro ostatni dzień'),
+    > 1 => tr('za {daysLeft} dni', {'daysLeft': p.daysLeft}),
     -1 => 'wczoraj',
-    _ => '${-p.daysLeft} dni temu',
+    _ => tr('{daysLeft} dni temu', {'daysLeft': -p.daysLeft}),
   };
-  return 'ważne do ${formatDay(p.validUntil)} ($when)';
+  return tr('ważne do {validUntil} ({when})', {'validUntil': formatDay(p.validUntil), 'when': when});
 }

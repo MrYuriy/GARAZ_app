@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/api_client.dart';
 import '../../core/providers.dart';
 import 'report_repository.dart';
+import '../../core/i18n.dart';
 
 /// Reports that could not be sent — no signal in the warehouse — kept on the
 /// phone with their photos and sent as soon as the server answers: when the app
@@ -230,8 +231,9 @@ class OutboxBanner extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Niewysłane zgłoszenia: ${waiting.length}. '
-                      'Wyślemy je automatycznie, gdy będzie internet.',
+                      tr('Niewysłane zgłoszenia: {waitingCount}. Wyślemy je automatycznie, gdy będzie internet.', {
+                        'waitingCount': waiting.length,
+                      }),
                     ),
                   ),
                 ],
@@ -245,7 +247,7 @@ class OutboxBanner extends ConsumerWidget {
                       )
                     : TextButton(
                         onPressed: () => ref.read(outboxProvider.notifier).flush(),
-                        child: const Text('Wyślij teraz'),
+                        child: Text(tr('Wyślij teraz')),
                       ),
               ),
             ],
@@ -253,10 +255,10 @@ class OutboxBanner extends ConsumerWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.error_outline, color: scheme.error),
-                title: Text('Wózek ${item.truckNumber} — zgłoszenie odrzucone'),
-                subtitle: Text('${item.rejected} Zgłoś zdarzenie jeszcze raz.'),
+                title: Text(tr('Wózek {truckNumber} — zgłoszenie odrzucone', {'truckNumber': item.truckNumber})),
+                subtitle: Text(tr('{rejected} Zgłoś zdarzenie jeszcze raz.', {'rejected': item.rejected})),
                 trailing: IconButton(
-                  tooltip: 'Usuń',
+                  tooltip: tr('Usuń'),
                   onPressed: () => ref.read(outboxProvider.notifier).remove(item),
                   icon: const Icon(Icons.delete_outline),
                 ),

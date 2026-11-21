@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
+import '../../core/i18n.dart';
 
 class _Tab {
-  const _Tab(this.branch, this.label, this.icon, {this.adminOnly = false});
+  const _Tab(this.branch, this._label, this.icon, {this.adminOnly = false});
 
   final int branch;
-  final String label;
+  final String _label;
+  String get label => tr(_label);
   final IconData icon;
   final bool adminOnly;
 }

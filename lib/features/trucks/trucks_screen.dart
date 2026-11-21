@@ -10,6 +10,7 @@ import '../../core/widgets/export_button.dart';
 import '../../core/widgets/filter_bar.dart';
 import 'truck_form_dialog.dart';
 import 'truck_qr_dialog.dart';
+import '../../core/i18n.dart';
 
 /// The fleet register. Everyone signed in reads it and prints QR labels;
 /// administrators add and edit trucks.
@@ -79,10 +80,14 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
       builder: (_) => TruckFormDialog(truck: truck),
     );
     if (identical(saved, TruckFormDialog.deleted)) {
-      _snack('Usunięto wózek ${truck!.number}');
+      _snack(tr('Usunięto wózek {number}', {'number': truck!.number}));
       await _load();
     } else if (saved != null) {
-      _snack(truck == null ? 'Dodano wózek ${saved.number}' : 'Zapisano wózek ${saved.number}');
+      _snack(
+        truck == null
+            ? tr('Dodano wózek {number}', {'number': saved.number})
+            : tr('Zapisano wózek {number}', {'number': saved.number}),
+      );
       await _load();
     }
   }
@@ -102,7 +107,11 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
       final ids = items.where((t) => _selected.contains(t.id)).map((t) => t.id).toList();
       final pdf = await ref.read(trucksRepositoryProvider).labelsPdf(ids);
       final saved = await saveBytes(pdf, 'etykiety-wozkow.pdf', 'application/pdf');
-      _snack(saved ? 'Pobrano PDF z etykietami (${ids.length}).' : 'Nie udało się zapisać pliku.');
+      _snack(
+        saved
+            ? tr('Pobrano PDF z etykietami ({idsCount}).', {'idsCount': ids.length})
+            : tr('Nie udało się zapisać pliku.'),
+      );
     } catch (e) {
       _snack(e.toString());
     } finally {
@@ -123,26 +132,26 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wózki'),
+        title: Text(tr('Wózki')),
         actions: [
           if (_selected.isNotEmpty)
             FilledButton.tonalIcon(
               onPressed: _printing ? null : _printLabels,
               icon: const Icon(Icons.print_outlined),
-              label: Text('Etykiety QR (${_selected.length})'),
+              label: Text(tr('Etykiety QR ({selectedCount})', {'selectedCount': _selected.length})),
             ),
           ExportButton(
             path: '/reports/trucks.xlsx',
             query: () => {if (_search.text.trim().isNotEmpty) 'query': _search.text.trim(), 'status': ?_status?.api},
           ),
-          IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+          IconButton(tooltip: tr('Odśwież'), onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
       ),
       floatingActionButton: isAdmin
           ? FloatingActionButton.extended(
               onPressed: () => _openForm(),
               icon: const Icon(Icons.add),
-              label: const Text('Dodaj wózek'),
+              label: Text(tr('Dodaj wózek')),
             )
           : null,
       body: Column(
@@ -150,16 +159,16 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
           FilterBar(
             searchController: _search,
             onSearch: _onSearch,
-            searchHint: 'Szukaj: numer, producent, model',
+            searchHint: tr('Szukaj: numer, producent, model'),
             groups: () => [
               FilterGroup(
-                title: 'Status',
+                title: tr('Status'),
                 activeLabel: _status?.filterLabel,
                 onClear: () => _setStatus(null),
                 options: [
                   for (final s in [null, ...TruckStatus.values])
                     FilterOption(
-                      s?.filterLabel ?? 'Wszystkie',
+                      s?.filterLabel ?? tr('Wszystkie'),
                       selected: _status == s,
                       onSelected: () => _setStatus(s),
                     ),
@@ -178,7 +187,7 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
             CheckboxListTile(
               dense: true,
               controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('Zaznacz wszystkie (do druku etykiet)'),
+              title: Text(tr('Zaznacz wszystkie (do druku etykiet)')),
               value: allSelected,
               onChanged: (v) => setState(() {
                 _selected.clear();
@@ -187,7 +196,7 @@ class _TrucksScreenState extends ConsumerState<TrucksScreen> {
             ),
           Expanded(
             child: items.isEmpty && !_loading
-                ? Center(child: Text(isAdmin ? 'Brak wózków — dodaj pierwszy.' : 'Brak wózków.'))
+                ? Center(child: Text(isAdmin ? tr('Brak wózków — dodaj pierwszy.') : tr('Brak wózków.')))
                 : ListView.separated(
                     padding: const EdgeInsets.only(bottom: 88),
                     itemCount: items.length,
@@ -243,7 +252,7 @@ class _TruckTile extends StatelessWidget {
       subtitle: Text(
         [truck.truckType.name, if (truck.makeAndModel.isNotEmpty) truck.makeAndModel, truck.site.name].join(' · '),
       ),
-      trailing: IconButton(tooltip: 'Kod QR', onPressed: onQr, icon: const Icon(Icons.qr_code_2)),
+      trailing: IconButton(tooltip: tr('Kod QR'), onPressed: onQr, icon: const Icon(Icons.qr_code_2)),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import 'in_use_dialog.dart';
+import '../../core/i18n.dart';
 
 /// Manufacturers and their models (in "Słowniki"). Administrators add, rename
 /// and delete; one used by trucks is deleted only after those trucks change.
@@ -56,31 +57,31 @@ class _TruckCatalogViewState extends ConsumerState<TruckCatalogView> {
   }
 
   Future<void> _deleteMaker(TruckManufacturer m) async {
-    final models = m.models.isEmpty ? '' : ' razem z modelami (${m.models.length})';
-    if (!await _confirm('Usunąć producenta ${m.name}$models?')) return;
+    final models = m.models.isEmpty ? '' : tr(' razem z modelami ({modelsCount})', {'modelsCount': m.models.length});
+    if (!await _confirm(tr('Usunąć producenta {name}{models}?', {'name': m.name, 'models': models}))) return;
     if (!mounted) return;
     final repo = ref.read(truckCatalogRepositoryProvider);
     final deleted = await deleteWithTruckCheck(
       context,
-      what: 'producent ${m.name}',
+      what: tr('producent {name}', {'name': m.name}),
       delete: () => repo.deleteManufacturer(m.id),
       uses: (t) => t.manufacturer?.id == m.id,
     );
-    if (deleted) _snack('Usunięto producenta ${m.name}.');
+    if (deleted) _snack(tr('Usunięto producenta {name}.', {'name': m.name}));
     await _load();
   }
 
   Future<void> _deleteModel(TruckManufacturer m, TruckModelEntry model) async {
-    if (!await _confirm('Usunąć model ${m.name} ${model.name}?')) return;
+    if (!await _confirm(tr('Usunąć model {name} {name2}?', {'name': m.name, 'name2': model.name}))) return;
     if (!mounted) return;
     final repo = ref.read(truckCatalogRepositoryProvider);
     final deleted = await deleteWithTruckCheck(
       context,
-      what: 'model ${model.name}',
+      what: tr('model {name}', {'name': model.name}),
       delete: () => repo.deleteModel(model.id),
       uses: (t) => t.model?.id == model.id,
     );
-    if (deleted) _snack('Usunięto model ${model.name}.');
+    if (deleted) _snack(tr('Usunięto model {name}.', {'name': model.name}));
     await _load();
   }
 
@@ -90,15 +91,15 @@ class _TruckCatalogViewState extends ConsumerState<TruckCatalogView> {
       builder: (ctx) => AlertDialog(
         title: Text(question),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Anuluj')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Usuń')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Anuluj'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Usuń'))),
         ],
       ),
     );
     return ok ?? false;
   }
 
-  String _uses(int n) => n == 0 ? 'nieużywany' : 'wózki: $n';
+  String _uses(int n) => n == 0 ? tr('nieużywany') : tr('wózki: {n}', {'n': n});
 
   @override
   Widget build(BuildContext context) {
@@ -114,15 +115,15 @@ class _TruckCatalogViewState extends ConsumerState<TruckCatalogView> {
             children: [
               Expanded(
                 child: Text(
-                  'Wózki wybierają producenta i model z tej listy.',
+                  tr('Wózki wybierają producenta i model z tej listy.'),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
               if (widget.canEdit)
                 FilledButton.tonalIcon(
-                  onPressed: () => _name('Nowy producent', 'Nazwa producenta', repo.createManufacturer),
+                  onPressed: () => _name(tr('Nowy producent'), tr('Nazwa producenta'), repo.createManufacturer),
                   icon: const Icon(Icons.add),
-                  label: const Text('Dodaj producenta'),
+                  label: Text(tr('Dodaj producenta')),
                 ),
             ],
           ),
@@ -135,7 +136,9 @@ class _TruckCatalogViewState extends ConsumerState<TruckCatalogView> {
           ),
         Expanded(
           child: items.isEmpty && !_loading
-              ? Center(child: Text(widget.canEdit ? 'Brak producentów — dodaj pierwszego.' : 'Brak producentów.'))
+              ? Center(
+                  child: Text(widget.canEdit ? tr('Brak producentów — dodaj pierwszego.') : tr('Brak producentów.')),
+                )
               : ListView(
                   padding: const EdgeInsets.only(bottom: 24),
                   children: [
@@ -144,22 +147,27 @@ class _TruckCatalogViewState extends ConsumerState<TruckCatalogView> {
                         key: PageStorageKey('maker-${m.id}'),
                         leading: const Icon(Icons.factory_outlined),
                         title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text('Modele: ${m.models.length} · ${_uses(m.truckCount)}'),
+                        subtitle: Text(
+                          tr('Modele: {modelsCount} · {truckCount}', {
+                            'modelsCount': m.models.length,
+                            'truckCount': _uses(m.truckCount),
+                          }),
+                        ),
                         trailing: widget.canEdit
                             ? Wrap(
                                 children: [
                                   IconButton(
-                                    tooltip: 'Zmień nazwę',
+                                    tooltip: tr('Zmień nazwę'),
                                     onPressed: () => _name(
-                                      'Producent',
-                                      'Nazwa producenta',
+                                      tr('Producent'),
+                                      tr('Nazwa producenta'),
                                       (n) => repo.renameManufacturer(m.id, n),
                                       m.name,
                                     ),
                                     icon: const Icon(Icons.edit),
                                   ),
                                   IconButton(
-                                    tooltip: 'Usuń producenta',
+                                    tooltip: tr('Usuń producenta'),
                                     onPressed: () => _deleteMaker(m),
                                     icon: Icon(Icons.delete_outline, color: scheme.error),
                                   ),
@@ -178,17 +186,17 @@ class _TruckCatalogViewState extends ConsumerState<TruckCatalogView> {
                                   ? Wrap(
                                       children: [
                                         IconButton(
-                                          tooltip: 'Zmień nazwę',
+                                          tooltip: tr('Zmień nazwę'),
                                           onPressed: () => _name(
-                                            'Model (${m.name})',
-                                            'Nazwa modelu',
+                                            tr('Model ({name})', {'name': m.name}),
+                                            tr('Nazwa modelu'),
                                             (n) => repo.renameModel(model.id, n),
                                             model.name,
                                           ),
                                           icon: const Icon(Icons.edit, size: 20),
                                         ),
                                         IconButton(
-                                          tooltip: 'Usuń model',
+                                          tooltip: tr('Usuń model'),
                                           onPressed: () => _deleteModel(m, model),
                                           icon: Icon(Icons.delete_outline, size: 20, color: scheme.error),
                                         ),
@@ -196,15 +204,18 @@ class _TruckCatalogViewState extends ConsumerState<TruckCatalogView> {
                                     )
                                   : null,
                             ),
-                          if (m.models.isEmpty) const ListTile(dense: true, title: Text('Brak modeli.')),
+                          if (m.models.isEmpty) ListTile(dense: true, title: Text(tr('Brak modeli.'))),
                           if (widget.canEdit)
                             Align(
                               alignment: Alignment.centerLeft,
                               child: TextButton.icon(
-                                onPressed: () =>
-                                    _name('Nowy model (${m.name})', 'Nazwa modelu', (n) => repo.createModel(m.id, n)),
+                                onPressed: () => _name(
+                                  tr('Nowy model ({name})', {'name': m.name}),
+                                  tr('Nazwa modelu'),
+                                  (n) => repo.createModel(m.id, n),
+                                ),
                                 icon: const Icon(Icons.add),
-                                label: const Text('Dodaj model'),
+                                label: Text(tr('Dodaj model')),
                               ),
                             ),
                         ],
@@ -243,7 +254,7 @@ class _NameDialogState extends State<_NameDialog> {
   Future<void> _submit() async {
     final name = _name.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'Podaj nazwę.');
+      setState(() => _error = tr('Podaj nazwę.'));
       return;
     }
     if (name == widget.initial) {
@@ -258,7 +269,7 @@ class _NameDialogState extends State<_NameDialog> {
       await widget.save(name);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      final text = e.toString().startsWith('Taki rekord') ? 'Taka nazwa już jest na liście.' : e.toString();
+      final text = e.toString().startsWith(tr('Taki rekord')) ? tr('Taka nazwa już jest na liście.') : e.toString();
       if (mounted) setState(() => _error = text);
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -280,8 +291,8 @@ class _NameDialogState extends State<_NameDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(false), child: const Text('Anuluj')),
-        FilledButton(onPressed: _busy ? null : _submit, child: const Text('Zapisz')),
+        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(false), child: Text(tr('Anuluj'))),
+        FilledButton(onPressed: _busy ? null : _submit, child: Text(tr('Zapisz'))),
       ],
     );
   }

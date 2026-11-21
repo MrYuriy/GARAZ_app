@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/i18n.dart';
 
 /// Add an operator ([operator] == null) or edit one. Pops the saved [Operator].
 class OperatorFormDialog extends ConsumerStatefulWidget {
@@ -103,19 +104,22 @@ class _OperatorFormDialogState extends ConsumerState<OperatorFormDialog> {
   Widget build(BuildContext context) {
     final o = widget.operator;
     final employers = [
-      const DropdownMenuItem<int?>(value: null, child: Text('— brak —')),
+      DropdownMenuItem<int?>(value: null, child: Text(tr('— brak —'))),
       for (final e in _employers ?? const <DictionaryEntry>[]) DropdownMenuItem<int?>(value: e.id, child: Text(e.name)),
       if (o?.employer != null && !(_employers ?? const []).any((e) => e.id == o!.employer!.id))
-        DropdownMenuItem<int?>(value: o!.employer!.id, child: Text('${o.employer!.name} (wyłączony)')),
+        DropdownMenuItem<int?>(
+          value: o!.employer!.id,
+          child: Text(tr('{name} (wyłączony)', {'name': o.employer!.name})),
+        ),
     ];
     final sites = [
       for (final s in _sites ?? const <DictionaryEntry>[]) DropdownMenuItem<int>(value: s.id, child: Text(s.name)),
       if (o != null && !(_sites ?? const []).any((s) => s.id == o.site.id))
-        DropdownMenuItem<int>(value: o.site.id, child: Text('${o.site.name} (wyłączona)')),
+        DropdownMenuItem<int>(value: o.site.id, child: Text(tr('{name} (wyłączona)', {'name': o.site.name}))),
     ];
 
     return AlertDialog(
-      title: Text(_isNew ? 'Nowy operator' : o!.fullName),
+      title: Text(_isNew ? tr('Nowy operator') : o!.fullName),
       content: SizedBox(
         width: 440,
         child: Form(
@@ -128,15 +132,17 @@ class _OperatorFormDialogState extends ConsumerState<OperatorFormDialog> {
                 TextFormField(
                   controller: _name,
                   autofocus: _isNew,
-                  decoration: const InputDecoration(labelText: 'Imię i nazwisko'),
-                  validator: (v) => (v ?? '').trim().isEmpty ? 'Podaj imię i nazwisko' : null,
+                  decoration: InputDecoration(labelText: tr('Imię i nazwisko')),
+                  validator: (v) => (v ?? '').trim().isEmpty ? tr('Podaj imię i nazwisko') : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int?>(
                   initialValue: _employerId,
                   decoration: InputDecoration(
-                    labelText: 'Pracodawca',
-                    helperText: (_employers?.isEmpty ?? false) ? 'Listę pracodawców uzupełnisz w „Słownikach”.' : null,
+                    labelText: tr('Pracodawca'),
+                    helperText: (_employers?.isEmpty ?? false)
+                        ? tr('Listę pracodawców uzupełnisz w „Słownikach”.')
+                        : null,
                   ),
                   items: employers,
                   onChanged: (v) => setState(() => _employerId = v),
@@ -144,24 +150,24 @@ class _OperatorFormDialogState extends ConsumerState<OperatorFormDialog> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _card,
-                  decoration: const InputDecoration(labelText: 'Nr karty Hyster Tracker (opcjonalnie)'),
+                  decoration: InputDecoration(labelText: tr('Nr karty Hyster Tracker (opcjonalnie)')),
                 ),
                 if (sites.length > 1) ...[
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int>(
                     initialValue: _siteId,
-                    decoration: const InputDecoration(labelText: 'Lokalizacja'),
+                    decoration: InputDecoration(labelText: tr('Lokalizacja')),
                     items: sites,
                     onChanged: (v) => setState(() => _siteId = v),
-                    validator: (v) => v == null ? 'Wybierz lokalizację' : null,
+                    validator: (v) => v == null ? tr('Wybierz lokalizację') : null,
                   ),
                 ],
                 if (!_isNew) ...[
                   const SizedBox(height: 4),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Aktywny'),
-                    subtitle: const Text('Wyłącz, gdy osoba już nie pracuje. Historia zostaje.'),
+                    title: Text(tr('Aktywny')),
+                    subtitle: Text(tr('Wyłącz, gdy osoba już nie pracuje. Historia zostaje.')),
                     value: _active,
                     onChanged: (v) => setState(() => _active = v),
                   ),
@@ -176,8 +182,11 @@ class _OperatorFormDialogState extends ConsumerState<OperatorFormDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: const Text('Anuluj')),
-        FilledButton(onPressed: _busy || _employers == null ? null : _save, child: Text(_isNew ? 'Dodaj' : 'Zapisz')),
+        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: Text(tr('Anuluj'))),
+        FilledButton(
+          onPressed: _busy || _employers == null ? null : _save,
+          child: Text(_isNew ? tr('Dodaj') : tr('Zapisz')),
+        ),
       ],
     );
   }

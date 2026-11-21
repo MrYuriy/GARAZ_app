@@ -1,6 +1,7 @@
 import '../../core/api_client.dart';
 import '../../core/models.dart';
 import '../../core/token_store.dart';
+import '../../core/i18n.dart';
 
 /// The backend's /auth endpoints. Stores the token pair on every sign-in.
 class AuthRepository {
@@ -15,7 +16,7 @@ class AuthRepository {
       await _storePair(data);
     } on ApiException catch (e) {
       // The server never says which part was wrong — neither do we.
-      if (e.statusCode == 401) throw ApiException(401, 'Nieprawidłowy login lub hasło.');
+      if (e.statusCode == 401) throw ApiException(401, tr('Nieprawidłowy login lub hasło.'));
       rethrow;
     }
     return me();
@@ -35,8 +36,8 @@ class AuthRepository {
       // Every other session ends; this one gets a fresh pair.
       await _storePair(data);
     } on ApiException catch (e) {
-      if (e.statusCode == 401) throw ApiException(401, 'Obecne hasło jest nieprawidłowe.');
-      if (e.statusCode == 400) throw ApiException(400, 'Nowe hasło musi różnić się od obecnego.');
+      if (e.statusCode == 401) throw ApiException(401, tr('Obecne hasło jest nieprawidłowe.'));
+      if (e.statusCode == 400) throw ApiException(400, tr('Nowe hasło musi różnić się od obecnego.'));
       rethrow;
     }
   }

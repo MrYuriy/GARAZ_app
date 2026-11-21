@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/i18n.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -12,7 +13,7 @@ class ProfileScreen extends ConsumerWidget {
     final done = await showDialog<bool>(context: context, builder: (_) => const _ChangePasswordDialog());
     if (done == true && context.mounted) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Hasło zmienione. Inne urządzenia zostały wylogowane.')));
+          .showSnackBar(SnackBar(content: Text(tr('Hasło zmienione. Inne urządzenia zostały wylogowane.'))));
     }
   }
 
@@ -20,11 +21,11 @@ class ProfileScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Wylogować ze wszystkich urządzeń?'),
-        content: const Text('Wszystkie sesje tego konta, także ta, zostaną zakończone.'),
+        title: Text(tr('Wylogować ze wszystkich urządzeń?')),
+        content: Text(tr('Wszystkie sesje tego konta, także ta, zostaną zakończone.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Anuluj')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Wyloguj wszędzie')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Anuluj'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Wyloguj wszędzie'))),
         ],
       ),
     );
@@ -37,7 +38,7 @@ class ProfileScreen extends ConsumerWidget {
     if (user == null) return const SizedBox.shrink();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Moje konto')),
+      appBar: AppBar(title: Text(tr('Moje konto'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -47,27 +48,27 @@ class ProfileScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.person_outline),
                   title: Text(user.displayName),
-                  subtitle: const Text('Imię i nazwisko'),
+                  subtitle: Text(tr('Imię i nazwisko')),
                 ),
                 ListTile(
                   leading: const Icon(Icons.badge_outlined),
                   title: Text(user.login),
-                  subtitle: const Text('Login'),
+                  subtitle: Text(tr('Login')),
                 ),
                 ListTile(
                   leading: const Icon(Icons.mail_outline),
                   title: Text(user.email ?? '—'),
-                  subtitle: const Text('Email do powiadomień'),
+                  subtitle: Text(tr('Email do powiadomień')),
                 ),
                 ListTile(
                   leading: const Icon(Icons.shield_outlined),
                   title: Text(user.role.label),
-                  subtitle: const Text('Rola'),
+                  subtitle: Text(tr('Rola')),
                 ),
                 ListTile(
                   leading: const Icon(Icons.schedule),
                   title: Text(formatDateTime(user.lastLoginAt)),
-                  subtitle: const Text('Ostatnie logowanie'),
+                  subtitle: Text(tr('Ostatnie logowanie')),
                 ),
               ],
             ),
@@ -77,25 +78,34 @@ class ProfileScreen extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
+                  leading: const Icon(Icons.translate),
+                  title: Text(kLanguageNames[ref.watch(languageProvider)]!),
+                  subtitle: Text(tr('Język')),
+                  trailing: const LanguageButton(),
+                ),
+                ListTile(
                   leading: const Icon(Icons.key),
-                  title: const Text('Zmień hasło'),
+                  title: Text(tr('Zmień hasło')),
                   onTap: () => _changePassword(context),
                 ),
                 ListTile(
                   leading: const Icon(Icons.logout),
-                  title: const Text('Wyloguj'),
+                  title: Text(tr('Wyloguj')),
                   onTap: () => ref.read(authControllerProvider.notifier).logout(),
                 ),
                 ListTile(
                   leading: const Icon(Icons.devices_other),
-                  title: const Text('Wyloguj ze wszystkich urządzeń'),
+                  title: Text(tr('Wyloguj ze wszystkich urządzeń')),
                   onTap: () => _logoutEverywhere(context, ref),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          Text('API: ${AppConfig.apiBaseUrl}', style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            tr('API: {apiBaseUrl}', {'apiBaseUrl': AppConfig.apiBaseUrl}),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ],
       ),
     );
@@ -144,7 +154,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Zmiana hasła'),
+      title: Text(tr('Zmiana hasła')),
       content: SizedBox(
         width: 380,
         child: Form(
@@ -155,22 +165,22 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
               TextFormField(
                 controller: _current,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Obecne hasło'),
-                validator: (v) => (v ?? '').isEmpty ? 'Podaj obecne hasło' : null,
+                decoration: InputDecoration(labelText: tr('Obecne hasło')),
+                validator: (v) => (v ?? '').isEmpty ? tr('Podaj obecne hasło') : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _next,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Nowe hasło'),
-                validator: (v) => (v ?? '').isEmpty ? 'Podaj nowe hasło' : null,
+                decoration: InputDecoration(labelText: tr('Nowe hasło')),
+                validator: (v) => (v ?? '').isEmpty ? tr('Podaj nowe hasło') : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _repeat,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Powtórz nowe hasło'),
-                validator: (v) => v != _next.text ? 'Hasła się różnią' : null,
+                decoration: InputDecoration(labelText: tr('Powtórz nowe hasło')),
+                validator: (v) => v != _next.text ? tr('Hasła się różnią') : null,
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
@@ -181,8 +191,8 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _busy ? null : () => Navigator.pop(context), child: const Text('Anuluj')),
-        FilledButton(onPressed: _busy ? null : _save, child: const Text('Zmień')),
+        TextButton(onPressed: _busy ? null : () => Navigator.pop(context), child: Text(tr('Anuluj'))),
+        FilledButton(onPressed: _busy ? null : _save, child: Text(tr('Zmień'))),
       ],
     );
   }

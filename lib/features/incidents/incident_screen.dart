@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import 'incident_widgets.dart';
+import '../../core/i18n.dart';
 
 /// One report: what happened, its photos, flags and history. Administrators
 /// move it along and put a stopped truck back to work.
@@ -66,18 +67,18 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Przywrócić wózek ${i.truck.name} do pracy?'),
+        title: Text(tr('Przywrócić wózek {name} do pracy?', {'name': i.truck.name})),
         content: TextField(
           controller: comment,
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Komentarz (opcjonalnie)',
-            helperText: 'Np. „naprawa zakończona”. Trafia do dziennika wózka.',
+          decoration: InputDecoration(
+            labelText: tr('Komentarz (opcjonalnie)'),
+            helperText: tr('Np. „naprawa zakończona”. Trafia do dziennika wózka.'),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Anuluj')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Przywróć')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Anuluj'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Przywróć'))),
         ],
       ),
     );
@@ -88,9 +89,9 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
     try {
       await ref.read(trucksRepositoryProvider).update(i.truck.id, {
         'status': TruckStatus.active.api,
-        'comment': text.isEmpty ? 'Przywrócony po zgłoszeniu nr ${i.id}' : text,
+        'comment': text.isEmpty ? tr('Przywrócony po zgłoszeniu nr {id}', {'id': i.id}) : text,
       });
-      _snack('Wózek ${i.truck.name} wrócił do pracy.');
+      _snack(tr('Wózek {name} wrócił do pracy.', {'name': i.truck.name}));
       await _load();
     } catch (e) {
       _snack(e.toString());
@@ -128,12 +129,12 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
     final i = _incident;
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: Text(i == null ? 'Zgłoszenie' : 'Zgłoszenie nr ${i.id}')),
+      appBar: AppBar(title: Text(i == null ? tr('Zgłoszenie') : tr('Zgłoszenie nr {id}', {'id': i.id}))),
       floatingActionButton: i != null && isAdmin
           ? FloatingActionButton.extended(
               onPressed: _busy ? null : _change,
               icon: const Icon(Icons.edit_note),
-              label: const Text('Zmień status / komentarz'),
+              label: Text(tr('Zmień status / komentarz')),
             )
           : null,
       body: i == null
@@ -152,7 +153,7 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                       ListTile(
                         leading: Icon(incidentTypeIcon(i.type), size: 32),
                         title: Text(
-                          '${i.type.label} · ${i.category.name}',
+                          tr('{label} · {name}', {'label': i.type.label, 'name': i.category.name}),
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         subtitle: Text(formatDateTime(i.occurredAt)),
@@ -160,25 +161,27 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                       ),
                       ListTile(
                         leading: const Icon(Icons.forklift),
-                        title: Text('Wózek ${i.truck.name}'),
+                        title: Text(tr('Wózek {name}', {'name': i.truck.name})),
                         subtitle: Text(
                           [
-                            'teraz: ${i.truckStatus.label}',
+                            tr('teraz: {label}', {'label': i.truckStatus.label}),
                             if (i.mth != null) 'MTH ${formatMth(i.mth!)}',
-                            'w zgłoszeniu: ${i.outOfService ? 'wyłączony z eksploatacji — TAK' : 'wyłączony — NIE'}',
+                            i.outOfService
+                                ? tr('w zgłoszeniu: wyłączony z eksploatacji — TAK')
+                                : tr('w zgłoszeniu: wyłączony — NIE'),
                           ].join(' · '),
                         ),
                         trailing: isAdmin && i.truckStatus == TruckStatus.outOfService
                             ? FilledButton.tonal(
                                 onPressed: _busy ? null : _restoreTruck,
-                                child: const Text('Przywróć do pracy'),
+                                child: Text(tr('Przywróć do pracy')),
                               )
                             : null,
                       ),
                       ListTile(
                         leading: Icon(i.operator == null ? Icons.person_outline : Icons.badge_outlined),
                         title: Text(i.driver),
-                        subtitle: i.operator == null ? const Text('osoba spoza rejestru operatorów') : null,
+                        subtitle: i.operator == null ? Text(tr('osoba spoza rejestru operatorów')) : null,
                       ),
                       if (i.description != null)
                         ListTile(leading: const Icon(Icons.notes), title: Text(i.description!)),
@@ -211,7 +214,10 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                     ),
                   ),
                 const SizedBox(height: 16),
-                Text('Zdjęcia (${i.photos.length})', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  tr('Zdjęcia ({photosCount})', {'photosCount': i.photos.length}),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -228,7 +234,7 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Text('Historia', style: Theme.of(context).textTheme.titleMedium),
+                Text(tr('Historia'), style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 for (final e in i.events.reversed)
                   ListTile(
@@ -236,10 +242,10 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                     leading: const Icon(Icons.history),
                     title: Text(
                       e.fromStatus == null
-                          ? (e.userName == null ? 'Zgłoszone przez operatora' : 'Dodane w panelu')
+                          ? (e.userName == null ? tr('Zgłoszone przez operatora') : tr('Dodane w panelu'))
                           : e.fromStatus == e.toStatus
-                          ? 'Komentarz'
-                          : '${e.fromStatus!.label} → ${e.toStatus.label}',
+                          ? tr('Komentarz')
+                          : tr('{label} → {label2}', {'label': e.fromStatus!.label, 'label2': e.toStatus.label}),
                     ),
                     subtitle: Text([formatDateTime(e.createdAt), ?e.userName, ?e.comment].join(' · ')),
                   ),
@@ -273,7 +279,7 @@ class _StatusDialogState extends State<_StatusDialog> {
     final comment = _comment.text.trim();
     final changed = _status != widget.current || comment.isNotEmpty;
     return AlertDialog(
-      title: const Text('Status zgłoszenia'),
+      title: Text(tr('Status zgłoszenia')),
       content: SizedBox(
         width: 400,
         child: Column(
@@ -289,17 +295,17 @@ class _StatusDialogState extends State<_StatusDialog> {
               controller: _comment,
               maxLines: 3,
               maxLength: 1000,
-              decoration: const InputDecoration(labelText: 'Komentarz (opcjonalnie)', alignLabelWithHint: true),
+              decoration: InputDecoration(labelText: tr('Komentarz (opcjonalnie)'), alignLabelWithHint: true),
               onChanged: (_) => setState(() {}),
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Anuluj')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('Anuluj'))),
         FilledButton(
           onPressed: changed ? () => Navigator.pop(context, (_status, comment.isEmpty ? null : comment)) : null,
-          child: const Text('Zapisz'),
+          child: Text(tr('Zapisz')),
         ),
       ],
     );

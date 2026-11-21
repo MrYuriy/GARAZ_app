@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/qr_code_dialog.dart';
+import '../../core/i18n.dart';
 
 /// A truck's QR sticker: preview, download, and (administrators) issue a new one.
 /// Pops true when the code was re-issued.
@@ -22,7 +23,7 @@ class TruckQrDialog extends ConsumerWidget {
       issuedAt: truck.qrIssuedAt,
       caption: truck.qrUrl,
       loadPng: () => repo.qrPng(truck.id),
-      reissueWarning: 'Obecna naklejka przestanie działać od razu. Trzeba będzie wydrukować i nakleić nową.',
+      reissueWarning: tr('Obecna naklejka przestanie działać od razu. Trzeba będzie wydrukować i nakleić nową.'),
       onReissue: isAdmin
           ? () async {
               final t = await repo.reissueQr(truck.id);

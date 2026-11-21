@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../core/i18n.dart';
+
 /// The token of a scanned code: a truck sticker carries a link (`…/t/<token>`),
 /// an operator card the bare token.
 String qrToken(String code) => RegExp(r'/t/([A-Za-z0-9_-]+)').firstMatch(code)?.group(1) ?? code.trim();
@@ -56,8 +58,9 @@ class _ScanDialogState extends State<ScanDialog> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
-                      'Brak dostępu do aparatu (${error.errorCode.name}). '
-                      'Zezwól na aparat w przeglądarce albo wpisz kod poniżej.',
+                      tr('Brak dostępu do aparatu ({name}). Zezwól na aparat w przeglądarce albo wpisz kod poniżej.', {
+                        'name': error.errorCode.name,
+                      }),
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.white),
                     ),
@@ -75,7 +78,7 @@ class _ScanDialogState extends State<ScanDialog> {
                   Expanded(
                     child: TextField(
                       controller: _manual,
-                      decoration: const InputDecoration(labelText: 'Albo wpisz kod', isDense: true),
+                      decoration: InputDecoration(labelText: tr('Albo wpisz kod'), isDense: true),
                       onSubmitted: _finish,
                     ),
                   ),

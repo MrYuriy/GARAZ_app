@@ -10,6 +10,7 @@ import 'incident_fields.dart';
 import 'outbox.dart';
 import 'report_repository.dart';
 import 'scan_dialog.dart';
+import '../../core/i18n.dart';
 
 /// What a truck's sticker opens (`/t/<token>`): the operator scans their own
 /// card, fills in the form, adds photos and sends. No sign-in.
@@ -75,8 +76,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       setState(() {
         _unknownCode = e.statusCode == 404;
         _loadError = _unknownCode
-            ? 'Nie rozpoznano kodu wózka. Zeskanuj naklejkę na wózku jeszcze raz. '
-                  'Jeśli to nie pomoże, naklejka mogła zostać wymieniona — zgłoś to przełożonemu.'
+            ? tr(
+                'Nie rozpoznano kodu wózka. Zeskanuj naklejkę na wózku jeszcze raz. Jeśli to nie pomoże, naklejka mogła zostać wymieniona — zgłoś to przełożonemu.',
+              )
             : e.message;
       });
     }
@@ -84,13 +86,13 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
 
   /// Another truck code, in place of the unknown one.
   Future<void> _scanTruck() async {
-    final code = await ScanDialog.open(context, 'Zeskanuj naklejkę wózka');
+    final code = await ScanDialog.open(context, tr('Zeskanuj naklejkę wózka'));
     if (code == null || !mounted) return;
     context.pushReplacement('/t/${Uri.encodeComponent(qrToken(code))}');
   }
 
   Future<void> _scanOperator() async {
-    final code = await ScanDialog.open(context, 'Zeskanuj swoją kartę');
+    final code = await ScanDialog.open(context, tr('Zeskanuj swoją kartę'));
     if (code == null || !mounted) return;
     setState(() {
       _checkingOperator = true;
@@ -107,19 +109,21 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       if (outboxSupported && isRetryable(e)) {
         setState(() {
           _operatorToken = code;
-          _operatorName = 'Karta zeskanowana';
+          _operatorName = tr('Karta zeskanowana');
           _operatorUnchecked = true;
         });
         return;
       }
-      setState(() => _error = e.statusCode == 404 ? 'Nie rozpoznano karty operatora. Spróbuj jeszcze raz.' : e.message);
+      setState(
+        () => _error = e.statusCode == 404 ? tr('Nie rozpoznano karty operatora. Spróbuj jeszcze raz.') : e.message,
+      );
     } finally {
       if (mounted) setState(() => _checkingOperator = false);
     }
   }
 
   String? get _missing {
-    if (_operatorToken == null) return 'Zeskanuj swoją kartę operatora.';
+    if (_operatorToken == null) return tr('Zeskanuj swoją kartę operatora.');
     return _draft.missing(photoRequired: true);
   }
 
@@ -156,7 +160,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       if (!mounted) return;
       setState(
         () => _error = e.statusCode == 0
-            ? 'Brak połączenia. Zgłoszenie nie zostało wysłane — spróbuj ponownie, gdy będzie zasięg.'
+            ? tr('Brak połączenia. Zgłoszenie nie zostało wysłane — spróbuj ponownie, gdy będzie zasięg.')
             : e.message,
       );
     } finally {
@@ -178,7 +182,8 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Zgłoszenie zdarzenia')),
+      // No sign-in here: the language is picked in the corner.
+      appBar: AppBar(title: Text(tr('Zgłoszenie zdarzenia')), actions: const [LanguageButton()]),
       body: Center(
         child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 640), child: _body(context)),
       ),
@@ -201,11 +206,11 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               FilledButton.icon(
                 onPressed: _scanTruck,
                 icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Zeskanuj ponownie'),
+                label: Text(tr('Zeskanuj ponownie')),
               )
             else
               // No connection or a server error: the same code may load now.
-              OutlinedButton(onPressed: _load, child: const Text('Spróbuj ponownie')),
+              OutlinedButton(onPressed: _load, child: Text(tr('Spróbuj ponownie'))),
           ],
         ),
       );
@@ -221,35 +226,35 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
         if (truck.offline)
           Card(
             color: scheme.secondaryContainer,
-            child: const ListTile(
+            child: ListTile(
               leading: Icon(Icons.signal_wifi_off),
-              title: Text('Brak internetu'),
-              subtitle: Text('Wypełnij zgłoszenie — zapiszemy je na telefonie i wyślemy, gdy wróci zasięg.'),
+              title: Text(tr('Brak internetu')),
+              subtitle: Text(tr('Wypełnij zgłoszenie — zapiszemy je na telefonie i wyślemy, gdy wróci zasięg.')),
             ),
           ),
         _truckCard(context, truck),
         const SizedBox(height: 12),
-        stepTitle(context, '1. Operator'),
+        stepTitle(context, tr('1. Operator')),
         Card(
           child: ListTile(
             leading: Icon(
               _operatorName == null ? Icons.badge_outlined : Icons.check_circle,
               color: _operatorName == null ? null : Colors.green,
             ),
-            title: Text(_operatorName ?? 'Zeskanuj swoją kartę operatora'),
+            title: Text(_operatorName ?? tr('Zeskanuj swoją kartę operatora')),
             subtitle: Text(
               _operatorName == null
-                  ? 'Kod QR na karcie.'
+                  ? tr('Kod QR na karcie.')
                   : _operatorUnchecked
-                  ? 'Bez zasięgu — kartę sprawdzimy przy wysyłce.'
-                  : 'Karta rozpoznana.',
+                  ? tr('Bez zasięgu — kartę sprawdzimy przy wysyłce.')
+                  : tr('Karta rozpoznana.'),
             ),
             trailing: _checkingOperator
                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
                 : FilledButton.tonalIcon(
                     onPressed: _sending ? null : _scanOperator,
                     icon: const Icon(Icons.qr_code_scanner),
-                    label: Text(_operatorName == null ? 'Skanuj' : 'Zmień'),
+                    label: Text(_operatorName == null ? tr('Skanuj') : tr('Zmień')),
                   ),
           ),
         ),
@@ -272,7 +277,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
         FilledButton.icon(
           onPressed: _sending ? null : _send,
           icon: const Icon(Icons.send),
-          label: Text(_sending ? 'Wysyłanie…' : 'Wyślij zgłoszenie'),
+          label: Text(_sending ? tr('Wysyłanie…') : tr('Wyślij zgłoszenie')),
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
         ),
       ],
@@ -284,7 +289,10 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.forklift, size: 36),
-        title: Text('Wózek ${truck.number}', style: const TextStyle(fontWeight: FontWeight.w700)),
+        title: Text(
+          tr('Wózek {number}', {'number': truck.number}),
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
         subtitle: Text([truck.truckType, ?truck.make, if (stopped) 'już wyłączony z eksploatacji'].join(' · ')),
       ),
     );
@@ -300,29 +308,33 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
           if (sent == null) ...[
             const Icon(Icons.schedule_send, size: 72, color: Colors.orange),
             const SizedBox(height: 16),
-            Text('Zapisano na telefonie', style: Theme.of(context).textTheme.headlineSmall),
+            Text(tr('Zapisano na telefonie'), style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text(
-              'Wózek ${truck.number}. Brak internetu — zgłoszenie zostanie wysłane automatycznie, '
-              'gdy telefon połączy się z siecią. Nie odinstalowuj aplikacji do tego czasu.\n\n'
-              'Jeśli wózek jest niesprawny, nie używaj go i powiadom przełożonego.',
+              tr(
+                'Wózek {number}. Brak internetu — zgłoszenie zostanie wysłane automatycznie, gdy telefon połączy się z siecią. Nie odinstalowuj aplikacji do tego czasu.\n\nJeśli wózek jest niesprawny, nie używaj go i powiadom przełożonego.',
+                {'number': truck.number},
+              ),
               textAlign: TextAlign.center,
             ),
           ] else ...[
             const Icon(Icons.check_circle, size: 72, color: Colors.green),
             const SizedBox(height: 16),
-            Text('Zgłoszenie wysłane', style: Theme.of(context).textTheme.headlineSmall),
+            Text(tr('Zgłoszenie wysłane'), style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
-            Text('Wózek ${truck.number} · zgłoszenie nr ${sent.id}', textAlign: TextAlign.center),
+            Text(
+              tr('Wózek {number} · zgłoszenie nr {id}', {'number': truck.number, 'id': sent.id}),
+              textAlign: TextAlign.center,
+            ),
           ],
           if (sent != null && sent.truckOutOfService) ...[
             const SizedBox(height: 16),
             Card(
               color: Theme.of(context).colorScheme.errorContainer,
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                  'Wózek jest wyłączony z eksploatacji. Nie używaj go, dopóki administrator go nie przywróci.',
+                  tr('Wózek jest wyłączony z eksploatacji. Nie używaj go, dopóki administrator go nie przywróci.'),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -332,12 +344,12 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
           OutlinedButton.icon(
             onPressed: _again,
             icon: const Icon(Icons.add),
-            label: const Text('Kolejne zgłoszenie dla tego wózka'),
+            label: Text(tr('Kolejne zgłoszenie dla tego wózka')),
           ),
           // Opened from the app's start screen (not from a link): back to it.
           if (Navigator.of(context).canPop()) ...[
             const SizedBox(height: 8),
-            FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Gotowe')),
+            FilledButton(onPressed: () => Navigator.of(context).pop(), child: Text(tr('Gotowe'))),
           ],
         ],
       ),

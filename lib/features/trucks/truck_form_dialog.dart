@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/i18n.dart';
 
 /// Add a truck ([truck] == null) or edit one. Pops the saved [Truck], or
 /// [TruckFormDialog.deleted] when the administrator deleted it.
@@ -85,7 +86,7 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
       for (final e in entries ?? const <DictionaryEntry>[]) DropdownMenuItem(value: e.id, child: Text(e.name)),
     ];
     if (current != null && !items.any((i) => i.value == current.id)) {
-      items.add(DropdownMenuItem(value: current.id, child: Text('${current.name} (wyłączony)')));
+      items.add(DropdownMenuItem(value: current.id, child: Text(tr('{name} (wyłączony)', {'name': current.name}))));
     }
     return items;
   }
@@ -98,17 +99,18 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Usunąć wózek ${t.number}?'),
-        content: const Text(
-          'Usuń tylko wózek dodany przez pomyłkę. Wózek wycofany z floty oznacz statusem „Nieaktywny” — '
-          'zostanie jego historia.',
+        title: Text(tr('Usunąć wózek {number}?', {'number': t.number})),
+        content: Text(
+          tr(
+            'Usuń tylko wózek dodany przez pomyłkę. Wózek wycofany z floty oznacz statusem „Nieaktywny” — zostanie jego historia.',
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Anuluj')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Anuluj'))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Usuń wózek'),
+            child: Text(tr('Usuń wózek')),
           ),
         ],
       ),
@@ -177,7 +179,7 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
     final statusChanged = t != null && _status != t.status;
 
     return AlertDialog(
-      title: Text(_isNew ? 'Nowy wózek' : 'Wózek ${t!.number}'),
+      title: Text(_isNew ? tr('Nowy wózek') : tr('Wózek {number}', {'number': t!.number})),
       content: SizedBox(
         width: 440,
         child: Form(
@@ -188,23 +190,26 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
               children: [
                 if (_types == null) const LinearProgressIndicator(),
                 if (noTypes)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(bottom: 12),
-                    child: Text('Najpierw dodaj typy wózków w zakładce „Słowniki”.'),
+                    child: Text(tr('Najpierw dodaj typy wózków w zakładce „Słowniki”.')),
                   ),
                 TextFormField(
                   controller: _number,
                   autofocus: _isNew,
-                  decoration: const InputDecoration(labelText: 'Numer wózka', helperText: 'Np. numer floty na wózku.'),
-                  validator: (v) => (v ?? '').trim().isEmpty ? 'Podaj numer' : null,
+                  decoration: InputDecoration(
+                    labelText: tr('Numer wózka'),
+                    helperText: tr('Np. numer floty na wózku.'),
+                  ),
+                  validator: (v) => (v ?? '').trim().isEmpty ? tr('Podaj numer') : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
                   initialValue: _typeId,
-                  decoration: const InputDecoration(labelText: 'Typ wózka'),
+                  decoration: InputDecoration(labelText: tr('Typ wózka')),
                   items: _options(_types, t?.truckType),
                   onChanged: (v) => setState(() => _typeId = v),
-                  validator: (v) => v == null ? 'Wybierz typ' : null,
+                  validator: (v) => v == null ? tr('Wybierz typ') : null,
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -215,7 +220,7 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
                         key: ValueKey('maker-${_makers?.length}'),
                         initialValue: _makerId,
                         isExpanded: true,
-                        decoration: const InputDecoration(labelText: 'Producent'),
+                        decoration: InputDecoration(labelText: tr('Producent')),
                         items: [
                           const DropdownMenuItem(value: null, child: Text('—')),
                           for (final m in _makers ?? const <TruckManufacturer>[])
@@ -234,7 +239,7 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
                         key: ValueKey('model-$_makerId-${_makers?.length}'),
                         initialValue: _modelId,
                         isExpanded: true,
-                        decoration: const InputDecoration(labelText: 'Model'),
+                        decoration: InputDecoration(labelText: tr('Model')),
                         items: [
                           const DropdownMenuItem(value: null, child: Text('—')),
                           for (final m in _modelsOfMaker) DropdownMenuItem(value: m.id, child: Text(m.name)),
@@ -248,7 +253,7 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      'Producentów i modele dodasz w „Słowniki” → „Producenci i modele”.',
+                      tr('Producentów i modele dodasz w „Słowniki” → „Producenci i modele”.'),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -257,17 +262,17 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int>(
                     initialValue: _siteId,
-                    decoration: const InputDecoration(labelText: 'Lokalizacja'),
+                    decoration: InputDecoration(labelText: tr('Lokalizacja')),
                     items: _options(_sites, t?.site),
                     onChanged: (v) => setState(() => _siteId = v),
-                    validator: (v) => v == null ? 'Wybierz lokalizację' : null,
+                    validator: (v) => v == null ? tr('Wybierz lokalizację') : null,
                   ),
                 ],
                 if (!_isNew) ...[
                   const SizedBox(height: 12),
                   DropdownButtonFormField<TruckStatus>(
                     initialValue: _status,
-                    decoration: const InputDecoration(labelText: 'Status'),
+                    decoration: InputDecoration(labelText: tr('Status')),
                     items: [for (final s in TruckStatus.values) DropdownMenuItem(value: s, child: Text(s.label))],
                     onChanged: (s) => setState(() => _status = s!),
                   ),
@@ -276,9 +281,9 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
                     TextFormField(
                       controller: _comment,
                       maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Komentarz do zmiany statusu (opcjonalnie)',
-                        helperText: 'Np. „naprawa zakończona”. Trafia do dziennika.',
+                      decoration: InputDecoration(
+                        labelText: tr('Komentarz do zmiany statusu (opcjonalnie)'),
+                        helperText: tr('Np. „naprawa zakończona”. Trafia do dziennika.'),
                       ),
                     ),
                   ],
@@ -297,12 +302,12 @@ class _TruckFormDialogState extends ConsumerState<TruckFormDialog> {
           TextButton.icon(
             onPressed: _busy ? null : _delete,
             icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-            label: Text('Usuń', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            label: Text(tr('Usuń'), style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
-        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: const Text('Anuluj')),
+        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: Text(tr('Anuluj'))),
         FilledButton(
           onPressed: _busy || _types == null || _makers == null || noTypes ? null : _save,
-          child: Text(_isNew ? 'Dodaj' : 'Zapisz'),
+          child: Text(_isNew ? tr('Dodaj') : tr('Zapisz')),
         ),
       ],
     );

@@ -10,6 +10,7 @@ import '../../core/widgets/export_button.dart';
 import '../../core/widgets/filter_bar.dart';
 import 'permit_dialog.dart';
 import 'permit_widgets.dart';
+import '../../core/i18n.dart';
 
 enum _Filter {
   all('Wszystkie'),
@@ -18,9 +19,11 @@ enum _Filter {
   expired('Wygasłe'),
   archived('Archiwum');
 
-  const _Filter(this.label);
+  const _Filter(this._label);
 
-  final String label;
+  final String _label;
+
+  String get label => tr(_label);
 }
 
 /// The permits register across operators, soonest to expire first.
@@ -119,7 +122,11 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
       ];
       final pdf = await ref.read(permitsRepositoryProvider).cardsPdf(ids);
       final saved = await saveBytes(pdf, 'upowaznienia.pdf', 'application/pdf');
-      _snack(saved ? 'Pobrano PDF z upoważnieniami (${ids.length}).' : 'Nie udało się zapisać pliku.');
+      _snack(
+        saved
+            ? tr('Pobrano PDF z upoważnieniami ({idsCount}).', {'idsCount': ids.length})
+            : tr('Nie udało się zapisać pliku.'),
+      );
     } catch (e) {
       _snack(e.toString());
     } finally {
@@ -146,16 +153,16 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
     final allSelected = printable.isNotEmpty && _selected.length == printable.length;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Uprawnienia'),
+        title: Text(tr('Uprawnienia')),
         actions: [
           if (_selected.isNotEmpty)
             FilledButton.tonalIcon(
               onPressed: _printing ? null : _printCards,
               icon: const Icon(Icons.print_outlined),
-              label: Text('Drukuj (${_selected.length})'),
+              label: Text(tr('Drukuj ({selectedCount})', {'selectedCount': _selected.length})),
             ),
           ExportButton(path: '/reports/permits.xlsx', query: _exportQuery),
-          IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+          IconButton(tooltip: tr('Odśwież'), onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: Column(
@@ -163,10 +170,10 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
           FilterBar(
             searchController: _search,
             onSearch: _onSearch,
-            searchHint: 'Szukaj: nr pozwolenia, nazwisko',
+            searchHint: tr('Szukaj: nr pozwolenia, nazwisko'),
             groups: () => [
               FilterGroup(
-                title: 'Pokaż',
+                title: tr('Pokaż'),
                 activeLabel: _filter == _Filter.all ? null : _filter.label,
                 onClear: () => _setFilter(_Filter.all),
                 options: [
@@ -187,7 +194,7 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
             CheckboxListTile(
               dense: true,
               controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('Zaznacz wszystkie do druku (8 na arkuszu A4)'),
+              title: Text(tr('Zaznacz wszystkie do druku (8 na arkuszu A4)')),
               value: allSelected,
               onChanged: (v) => setState(() {
                 _selected.clear();
@@ -196,7 +203,7 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
             ),
           Expanded(
             child: items.isEmpty && !_loading
-                ? const Center(child: Text('Brak uprawnień. Nowe dodasz na stronie operatora.'))
+                ? Center(child: Text(tr('Brak uprawnień. Nowe dodasz na stronie operatora.')))
                 : ListView.separated(
                     itemCount: items.length,
                     separatorBuilder: (_, _) => const Divider(height: 1),
@@ -211,7 +218,9 @@ class _PermitsScreenState extends ConsumerState<PermitsScreen> {
                               ? null
                               : (v) => setState(() => v == true ? _selected.add(p.id) : _selected.remove(p.id)),
                         ),
-                        title: Text('${p.operatorName} · ${p.number}'),
+                        title: Text(
+                          tr('{operatorName} · {number}', {'operatorName': p.operatorName, 'number': p.number}),
+                        ),
                         subtitle: Text(
                           [p.category.name, p.truckTypes.map((t) => t.name).join(', '), validityText(p)].join(' · '),
                         ),

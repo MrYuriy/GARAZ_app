@@ -11,6 +11,7 @@ import '../../core/widgets/export_button.dart';
 import '../../core/widgets/filter_bar.dart';
 import '../permits/permit_widgets.dart';
 import 'operator_form_dialog.dart';
+import '../../core/i18n.dart';
 
 /// The operators register. Everyone signed in reads it and prints QR cards;
 /// administrators add and edit. A row opens the operator with their permits.
@@ -78,7 +79,7 @@ class _OperatorsScreenState extends ConsumerState<OperatorsScreen> {
   Future<void> _add() async {
     final saved = await showDialog<Operator>(context: context, builder: (_) => const OperatorFormDialog());
     if (saved == null || !mounted) return;
-    _snack('Dodano operatora ${saved.fullName}. Teraz dodaj mu uprawnienie.');
+    _snack(tr('Dodano operatora {fullName}. Teraz dodaj mu uprawnienie.', {'fullName': saved.fullName}));
     await context.push('/operators/${saved.id}');
     await _load();
   }
@@ -97,7 +98,11 @@ class _OperatorsScreenState extends ConsumerState<OperatorsScreen> {
       ];
       final pdf = await ref.read(operatorsRepositoryProvider).cardsPdf(ids);
       final saved = await saveBytes(pdf, 'karty-operatorow.pdf', 'application/pdf');
-      _snack(saved ? 'Pobrano PDF z kartami (${ids.length}).' : 'Nie udało się zapisać pliku.');
+      _snack(
+        saved
+            ? tr('Pobrano PDF z kartami ({idsCount}).', {'idsCount': ids.length})
+            : tr('Nie udało się zapisać pliku.'),
+      );
     } catch (e) {
       _snack(e.toString());
     } finally {
@@ -113,13 +118,13 @@ class _OperatorsScreenState extends ConsumerState<OperatorsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Operatorzy'),
+        title: Text(tr('Operatorzy')),
         actions: [
           if (_selected.isNotEmpty)
             FilledButton.tonalIcon(
               onPressed: _printing ? null : _printCards,
               icon: const Icon(Icons.print_outlined),
-              label: Text('Karty QR (${_selected.length})'),
+              label: Text(tr('Karty QR ({selectedCount})', {'selectedCount': _selected.length})),
             ),
           ExportButton(
             path: '/reports/operators.xlsx',
@@ -128,14 +133,14 @@ class _OperatorsScreenState extends ConsumerState<OperatorsScreen> {
               if (_onlyActive) 'is_active': true,
             },
           ),
-          IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+          IconButton(tooltip: tr('Odśwież'), onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
       ),
       floatingActionButton: isAdmin
           ? FloatingActionButton.extended(
               onPressed: _add,
               icon: const Icon(Icons.person_add_alt),
-              label: const Text('Dodaj operatora'),
+              label: Text(tr('Dodaj operatora')),
             )
           : null,
       body: Column(
@@ -143,12 +148,12 @@ class _OperatorsScreenState extends ConsumerState<OperatorsScreen> {
           FilterBar(
             searchController: _search,
             onSearch: _onSearch,
-            searchHint: 'Szukaj: nazwisko, nr karty Hyster',
+            searchHint: tr('Szukaj: nazwisko, nr karty Hyster'),
             groups: () => [
               FilterGroup.toggle(
-                title: 'Tylko aktywni',
+                title: tr('Tylko aktywni'),
                 value: _onlyActive,
-                activeLabel: _onlyActive ? null : 'Także nieaktywni',
+                activeLabel: _onlyActive ? null : tr('Także nieaktywni'),
                 onChanged: (v) {
                   setState(() => _onlyActive = v);
                   _load();
@@ -167,7 +172,7 @@ class _OperatorsScreenState extends ConsumerState<OperatorsScreen> {
             CheckboxListTile(
               dense: true,
               controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('Zaznacz wszystkich (do druku kart QR)'),
+              title: Text(tr('Zaznacz wszystkich (do druku kart QR)')),
               value: allSelected,
               onChanged: (v) => setState(() {
                 _selected.clear();
@@ -176,7 +181,7 @@ class _OperatorsScreenState extends ConsumerState<OperatorsScreen> {
             ),
           Expanded(
             child: items.isEmpty && !_loading
-                ? Center(child: Text(isAdmin ? 'Brak operatorów — dodaj pierwszego.' : 'Brak operatorów.'))
+                ? Center(child: Text(isAdmin ? tr('Brak operatorów — dodaj pierwszego.') : tr('Brak operatorów.')))
                 : ListView.separated(
                     padding: const EdgeInsets.only(bottom: 88),
                     itemCount: items.length,
@@ -213,7 +218,7 @@ class _OperatorTile extends StatelessWidget {
     final current = o.permits.where((p) => p.status == o.permitStatus).firstOrNull;
     final details = [
       ?o.employer?.name,
-      if (o.hysterCardNumber != null) 'Hyster ${o.hysterCardNumber}',
+      if (o.hysterCardNumber != null) tr('Hyster {hysterCardNumber}', {'hysterCardNumber': o.hysterCardNumber}),
       if (current != null) validityText(current),
       if (!o.isActive) 'nieaktywny',
     ];

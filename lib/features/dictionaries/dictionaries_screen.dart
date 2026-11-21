@@ -5,6 +5,7 @@ import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/filter_bar.dart';
 import '../trucks/truck_catalog_view.dart';
+import '../../core/i18n.dart';
 
 /// The panel's lists. Everyone signed in reads them; administrators edit.
 class DictionariesScreen extends ConsumerStatefulWidget {
@@ -79,34 +80,34 @@ class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Słowniki'),
+        title: Text(tr('Słowniki')),
         actions: [
           if (!_catalog)
-            IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+            IconButton(tooltip: tr('Odśwież'), onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
       ),
       floatingActionButton: canEdit && !_catalog
           ? FloatingActionButton.extended(
               onPressed: () => _edit(),
               icon: const Icon(Icons.add),
-              label: const Text('Dodaj'),
+              label: Text(tr('Dodaj')),
             )
           : null,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           FilterBar(
-            pickerLabel: _catalog ? 'Producenci i modele' : _kind.label,
+            pickerLabel: _catalog ? tr('Producenci i modele') : _kind.label,
             groups: () => [
               FilterGroup(
-                title: 'Słownik',
+                title: tr('Słownik'),
                 options: [
                   for (final k in DictionaryKind.values) ...[
                     FilterOption(k.label, selected: !_catalog && k == _kind, onSelected: () => _select(k)),
                     // Next to truck types, where it belongs.
                     if (k == DictionaryKind.truckTypes)
                       FilterOption(
-                        'Producenci i modele',
+                        tr('Producenci i modele'),
                         selected: _catalog,
                         onSelected: () => setState(() => _catalog = true),
                       ),
@@ -115,9 +116,9 @@ class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
               ),
               if (!_catalog)
                 FilterGroup.toggle(
-                  title: 'Pokaż wyłączone',
+                  title: tr('Pokaż wyłączone'),
                   value: _showInactive,
-                  activeLabel: _showInactive ? 'Z wyłączonymi' : null,
+                  activeLabel: _showInactive ? tr('Z wyłączonymi') : null,
                   onChanged: (v) {
                     setState(() => _showInactive = v);
                     _load();
@@ -144,7 +145,7 @@ class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
         child: _items.isEmpty && !_loading
             ? Center(
                 child: Text(
-                  canEdit ? 'Lista jest pusta — dodaj pierwszą pozycję.' : 'Lista jest pusta.',
+                  canEdit ? tr('Lista jest pusta — dodaj pierwszą pozycję.') : tr('Lista jest pusta.'),
                   textAlign: TextAlign.center,
                 ),
               )
@@ -165,7 +166,7 @@ class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
                     subtitle: _subtitle(e),
                     trailing: canEdit
                         ? Switch(value: e.isActive, onChanged: (v) => _toggle(e, v))
-                        : (e.isActive ? null : const Chip(label: Text('Wyłączone'))),
+                        : (e.isActive ? null : Chip(label: Text(tr('Wyłączone')))),
                   );
                 },
               ),
@@ -176,8 +177,8 @@ class _DictionariesScreenState extends ConsumerState<DictionariesScreen> {
   Widget? _subtitle(DictionaryEntry e) {
     if (e.incidentTypes == null) return null;
     final types = e.incidentTypes!.map((t) => t.label).join(', ');
-    final stop = (e.defaultOutOfService ?? false) ? 'wyłącza wózek: TAK' : 'wyłącza wózek: NIE';
-    return Text('$types · $stop');
+    final stop = (e.defaultOutOfService ?? false) ? tr('wyłącza wózek: TAK') : tr('wyłącza wózek: NIE');
+    return Text(tr('{types} · {stop}', {'types': types, 'stop': stop}));
   }
 }
 
@@ -213,7 +214,7 @@ class _EntryDialogState extends ConsumerState<_EntryDialog> {
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
     if (_isIncident && _types.isEmpty) {
-      setState(() => _error = 'Wybierz co najmniej jeden typ zdarzenia.');
+      setState(() => _error = tr('Wybierz co najmniej jeden typ zdarzenia.'));
       return;
     }
     setState(() {
@@ -245,7 +246,7 @@ class _EntryDialogState extends ConsumerState<_EntryDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('${widget.kind.label}: ${widget.entry == null ? 'nowa pozycja' : 'edycja'}'),
+      title: Text('${widget.kind.label}: ${widget.entry == null ? tr('nowa pozycja') : tr('edycja')}'),
       content: SizedBox(
         width: 420,
         child: Form(
@@ -258,22 +259,22 @@ class _EntryDialogState extends ConsumerState<_EntryDialog> {
                 TextFormField(
                   controller: _name,
                   autofocus: true,
-                  decoration: const InputDecoration(labelText: 'Nazwa'),
-                  validator: (v) => (v ?? '').trim().isEmpty ? 'Podaj nazwę' : null,
+                  decoration: InputDecoration(labelText: tr('Nazwa')),
+                  validator: (v) => (v ?? '').trim().isEmpty ? tr('Podaj nazwę') : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _order,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Kolejność',
-                    helperText: 'Mniejsza liczba = wyżej na liście.',
+                  decoration: InputDecoration(
+                    labelText: tr('Kolejność'),
+                    helperText: tr('Mniejsza liczba = wyżej na liście.'),
                   ),
-                  validator: (v) => int.tryParse((v ?? '').trim()) == null ? 'Podaj liczbę' : null,
+                  validator: (v) => int.tryParse((v ?? '').trim()) == null ? tr('Podaj liczbę') : null,
                 ),
                 if (_isIncident) ...[
                   const SizedBox(height: 16),
-                  Text('Dostępna dla typów zdarzeń', style: Theme.of(context).textTheme.labelLarge),
+                  Text(tr('Dostępna dla typów zdarzeń'), style: Theme.of(context).textTheme.labelLarge),
                   for (final t in IncidentType.values)
                     CheckboxListTile(
                       dense: true,
@@ -285,8 +286,8 @@ class _EntryDialogState extends ConsumerState<_EntryDialog> {
                     ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Domyślnie: wyłączony z eksploatacji'),
-                    subtitle: const Text('Podpowiedź w formularzu; operator może ją zmienić.'),
+                    title: Text(tr('Domyślnie: wyłączony z eksploatacji')),
+                    subtitle: Text(tr('Podpowiedź w formularzu; operator może ją zmienić.')),
                     value: _outOfService,
                     onChanged: (v) => setState(() => _outOfService = v),
                   ),
@@ -301,8 +302,8 @@ class _EntryDialogState extends ConsumerState<_EntryDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: const Text('Anuluj')),
-        FilledButton(onPressed: _busy ? null : _save, child: const Text('Zapisz')),
+        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: Text(tr('Anuluj'))),
+        FilledButton(onPressed: _busy ? null : _save, child: Text(tr('Zapisz'))),
       ],
     );
   }

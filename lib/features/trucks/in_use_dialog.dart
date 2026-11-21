@@ -5,6 +5,7 @@ import '../../core/api_client.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import 'truck_form_dialog.dart';
+import '../../core/i18n.dart';
 
 /// Deletes an entry; when trucks still use it, lists them so each can be
 /// changed or deleted first, then offers the delete again.
@@ -70,17 +71,18 @@ class _InUseDialogState extends ConsumerState<_InUseDialog> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Usunąć wózek ${t.name}?'),
-        content: const Text(
-          'Wózek zniknie z rejestru. Jeśli tylko wycofano go z floty, lepiej ustaw status „Nieaktywny” '
-          '(zmień mu model zamiast usuwać).',
+        title: Text(tr('Usunąć wózek {name}?', {'name': t.name})),
+        content: Text(
+          tr(
+            'Wózek zniknie z rejestru. Jeśli tylko wycofano go z floty, lepiej ustaw status „Nieaktywny” (zmień mu model zamiast usuwać).',
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Anuluj')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Anuluj'))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Usuń wózek'),
+            child: Text(tr('Usuń wózek')),
           ),
         ],
       ),
@@ -114,7 +116,7 @@ class _InUseDialogState extends ConsumerState<_InUseDialog> {
             ..clear()
             ..addAll(trucks);
         }
-        _error = trucks == null ? e.message : 'Nadal używane przez wózki poniżej.';
+        _error = trucks == null ? e.message : tr('Nadal używane przez wózki poniżej.');
       });
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -125,7 +127,7 @@ class _InUseDialogState extends ConsumerState<_InUseDialog> {
   Widget build(BuildContext context) {
     final free = _trucks.isEmpty;
     return AlertDialog(
-      title: Text('Nie można usunąć: ${widget.what}'),
+      title: Text(tr('Nie można usunąć: {what}', {'what': widget.what})),
       content: SizedBox(
         width: 440,
         child: Column(
@@ -134,8 +136,10 @@ class _InUseDialogState extends ConsumerState<_InUseDialog> {
           children: [
             Text(
               free
-                  ? 'Żaden wózek już tego nie używa — można usunąć.'
-                  : 'Używają tego wózki (${_trucks.length}). Najpierw zmień im producenta/model albo usuń wózki.',
+                  ? tr('Żaden wózek już tego nie używa — można usunąć.')
+                  : tr('Używają tego wózki ({trucksCount}). Najpierw zmień im producenta/model albo usuń wózki.', {
+                      'trucksCount': _trucks.length,
+                    }),
             ),
             const SizedBox(height: 8),
             if (_busy) const LinearProgressIndicator(),
@@ -155,10 +159,10 @@ class _InUseDialogState extends ConsumerState<_InUseDialog> {
                           TextButton.icon(
                             onPressed: _busy ? null : () => _change(t),
                             icon: const Icon(Icons.edit, size: 18),
-                            label: const Text('Zmień'),
+                            label: Text(tr('Zmień')),
                           ),
                           IconButton(
-                            tooltip: 'Usuń wózek',
+                            tooltip: tr('Usuń wózek'),
                             onPressed: _busy ? null : () => _deleteTruck(t),
                             icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
                           ),
@@ -176,8 +180,8 @@ class _InUseDialogState extends ConsumerState<_InUseDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(false), child: const Text('Zamknij')),
-        FilledButton(onPressed: _busy || !free ? null : _retry, child: Text('Usuń: ${widget.what}')),
+        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(false), child: Text(tr('Zamknij'))),
+        FilledButton(onPressed: _busy || !free ? null : _retry, child: Text(tr('Usuń: {what}', {'what': widget.what}))),
       ],
     );
   }

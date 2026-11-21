@@ -3,17 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../download/download.dart';
 import '../providers.dart';
+import '../i18n.dart';
 
 const xlsxMimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 /// "Eksport do Excel": downloads [path] (a /reports/…xlsx) with the filters
 /// [query] gives at the moment of the press — what the list shows.
 class ExportButton extends ConsumerStatefulWidget {
-  const ExportButton({super.key, required this.path, this.query, this.tooltip = 'Eksport do Excel'});
+  const ExportButton({super.key, required this.path, this.query, this.tooltip});
 
   final String path;
   final Map<String, dynamic> Function()? query;
-  final String tooltip;
+
+  /// Defaults to "Eksport do Excel".
+  final String? tooltip;
 
   @override
   ConsumerState<ExportButton> createState() => _ExportButtonState();
@@ -29,7 +32,11 @@ class _ExportButtonState extends ConsumerState<ExportButton> {
       final file = await ref.read(reportsRepositoryProvider).xlsx(widget.path, widget.query?.call());
       final saved = await saveBytes(file.bytes, file.filename, xlsxMimeType);
       messenger.showSnackBar(
-        SnackBar(content: Text(saved ? 'Pobrano ${file.filename}.' : 'Nie udało się zapisać pliku.')),
+        SnackBar(
+          content: Text(
+            saved ? tr('Pobrano {filename}.', {'filename': file.filename}) : tr('Nie udało się zapisać pliku.'),
+          ),
+        ),
       );
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.toString())));
@@ -40,7 +47,7 @@ class _ExportButtonState extends ConsumerState<ExportButton> {
 
   @override
   Widget build(BuildContext context) => IconButton(
-    tooltip: widget.tooltip,
+    tooltip: widget.tooltip ?? tr('Eksport do Excel'),
     onPressed: _busy ? null : _export,
     icon: _busy
         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))

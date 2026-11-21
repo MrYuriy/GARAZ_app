@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/i18n.dart';
 
 /// Create an account ([user] == null) or edit one. Pops the saved [User].
 class UserFormDialog extends ConsumerStatefulWidget {
@@ -87,7 +88,7 @@ class _UserFormDialogState extends ConsumerState<UserFormDialog> {
   Widget build(BuildContext context) {
     final roles = widget.actor.role.manageable;
     return AlertDialog(
-      title: Text(_isNew ? 'Nowe konto' : 'Konto ${widget.user!.login}'),
+      title: Text(_isNew ? tr('Nowe konto') : tr('Konto {login}', {'login': widget.user!.login})),
       content: SizedBox(
         width: 420,
         child: Form(
@@ -99,11 +100,11 @@ class _UserFormDialogState extends ConsumerState<UserFormDialog> {
                 TextFormField(
                   controller: _login,
                   autocorrect: false,
-                  decoration: const InputDecoration(labelText: 'Login (np. z WMS)'),
+                  decoration: InputDecoration(labelText: tr('Login (np. z WMS)')),
                   validator: (v) {
                     final s = (v ?? '').trim().toLowerCase();
                     if (!RegExp(r'^[a-z0-9][a-z0-9._-]{1,63}$').hasMatch(s)) {
-                      return '2–64 znaki: litery, cyfry, . _ -';
+                      return tr('2–64 znaki: litery, cyfry, . _ -');
                     }
                     return null;
                   },
@@ -111,21 +112,21 @@ class _UserFormDialogState extends ConsumerState<UserFormDialog> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _fullName,
-                  decoration: const InputDecoration(labelText: 'Imię i nazwisko'),
+                  decoration: InputDecoration(labelText: tr('Imię i nazwisko')),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email (opcjonalnie)',
-                    helperText: 'Tylko do powiadomień — logowanie jest loginem.',
+                  decoration: InputDecoration(
+                    labelText: tr('Email (opcjonalnie)'),
+                    helperText: tr('Tylko do powiadomień — logowanie jest loginem.'),
                   ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<Role>(
                   initialValue: _role,
-                  decoration: const InputDecoration(labelText: 'Rola'),
+                  decoration: InputDecoration(labelText: tr('Rola')),
                   items: [for (final r in roles) DropdownMenuItem(value: r, child: Text(r.label))],
                   onChanged: (r) => setState(() => _role = r!),
                 ),
@@ -133,9 +134,9 @@ class _UserFormDialogState extends ConsumerState<UserFormDialog> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<UserStatus>(
                     initialValue: _status,
-                    decoration: const InputDecoration(
-                      labelText: 'Status',
-                      helperText: 'Wyłączenie wylogowuje ze wszystkich urządzeń.',
+                    decoration: InputDecoration(
+                      labelText: tr('Status'),
+                      helperText: tr('Wyłączenie wylogowuje ze wszystkich urządzeń.'),
                     ),
                     items: [for (final s in UserStatus.values) DropdownMenuItem(value: s, child: Text(s.label))],
                     onChanged: (s) => setState(() => _status = s!),
@@ -145,19 +146,19 @@ class _UserFormDialogState extends ConsumerState<UserFormDialog> {
                 TextFormField(
                   controller: _password,
                   decoration: InputDecoration(
-                    labelText: _isNew ? 'Hasło startowe' : 'Nowe hasło (zostaw puste, aby nie zmieniać)',
+                    labelText: _isNew ? tr('Hasło startowe') : tr('Nowe hasło (zostaw puste, aby nie zmieniać)'),
                   ),
                   // A reset password is a starting one too: ask for a change by default.
                   onChanged: (v) {
                     if (!_isNew && v.isNotEmpty && !_mustChange) setState(() => _mustChange = true);
                   },
-                  validator: (v) => (_isNew && (v ?? '').isEmpty) ? 'Podaj hasło' : null,
+                  validator: (v) => (_isNew && (v ?? '').isEmpty) ? tr('Podaj hasło') : null,
                 ),
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _mustChange,
                   onChanged: (v) => setState(() => _mustChange = v ?? false),
-                  title: const Text('Wymagaj zmiany hasła przy następnym logowaniu'),
+                  title: Text(tr('Wymagaj zmiany hasła przy następnym logowaniu')),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
@@ -169,8 +170,8 @@ class _UserFormDialogState extends ConsumerState<UserFormDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: const Text('Anuluj')),
-        FilledButton(onPressed: _busy ? null : _save, child: Text(_isNew ? 'Utwórz' : 'Zapisz')),
+        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: Text(tr('Anuluj'))),
+        FilledButton(onPressed: _busy ? null : _save, child: Text(_isNew ? tr('Utwórz') : tr('Zapisz'))),
       ],
     );
   }

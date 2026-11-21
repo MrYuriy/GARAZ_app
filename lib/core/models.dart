@@ -1,15 +1,19 @@
 /// DTOs mirroring the backend schemas (app/schemas/*.py in GARAZ).
 library;
 
+import 'i18n.dart';
+
 enum Role {
   superAdmin('SUPER_ADMIN', 'Super administrator'),
   admin('ADMIN', 'Administrator'),
   manager('MANAGER', 'Kierownik / Lider');
 
-  const Role(this.api, this.label);
+  const Role(this.api, this._label);
 
   final String api;
-  final String label;
+  final String _label;
+
+  String get label => tr(_label);
 
   static Role fromApi(String value) => Role.values.firstWhere((r) => r.api == value);
 
@@ -28,10 +32,12 @@ enum UserStatus {
   active('ACTIVE', 'Aktywne'),
   disabled('DISABLED', 'Wyłączone');
 
-  const UserStatus(this.api, this.label);
+  const UserStatus(this.api, this._label);
 
   final String api;
-  final String label;
+  final String _label;
+
+  String get label => tr(_label);
 
   static UserStatus fromApi(String value) => UserStatus.values.firstWhere((s) => s.api == value);
 }
@@ -110,36 +116,36 @@ class AuditEntry {
 
   /// Polish name of the action; unknown ones show as sent.
   String get label => switch (action) {
-    'auth.login' => 'Logowanie',
-    'auth.logout_all' => 'Wylogowanie ze wszystkich urządzeń',
-    'auth.password_changed' => 'Zmiana hasła',
-    'auth.token_reuse' => 'Podejrzenie przejęcia sesji',
-    'user.created' => 'Utworzenie konta',
-    'user.updated' => 'Zmiana konta',
-    'dictionary.created' => 'Dodanie pozycji słownika',
-    'dictionary.updated' => 'Zmiana pozycji słownika',
-    'truck.created' => 'Dodanie wózka',
-    'truck.updated' => 'Zmiana wózka',
-    'truck.qr_reissued' => 'Nowy kod QR wózka',
-    'truck.deleted' => 'Usunięcie wózka',
-    'truck_manufacturer.created' => 'Dodanie producenta wózków',
-    'truck_manufacturer.updated' => 'Zmiana producenta wózków',
-    'truck_manufacturer.deleted' => 'Usunięcie producenta wózków',
-    'truck_model.created' => 'Dodanie modelu wózka',
-    'truck_model.updated' => 'Zmiana modelu wózka',
-    'truck_model.deleted' => 'Usunięcie modelu wózka',
-    'incident.created' => 'Zgłoszenie zdarzenia',
-    'incident.updated' => 'Zmiana zgłoszenia',
-    'operator.created' => 'Dodanie operatora',
-    'operator.updated' => 'Zmiana operatora',
-    'operator.qr_reissued' => 'Nowy kod QR operatora',
-    'permit.created' => 'Dodanie uprawnienia',
-    'permit.updated' => 'Zmiana uprawnienia',
-    'permit.expired' => 'Uprawnienie wygasło',
-    'permit.renewed' => 'Uprawnienie odnowione (nowy numer)',
-    'permit.document_attached' => 'Dołączenie skanu dokumentu',
-    'permit.document_removed' => 'Usunięcie skanu dokumentu',
-    'report.exported' => 'Eksport do Excel',
+    'auth.login' => tr('Logowanie'),
+    'auth.logout_all' => tr('Wylogowanie ze wszystkich urządzeń'),
+    'auth.password_changed' => tr('Zmiana hasła'),
+    'auth.token_reuse' => tr('Podejrzenie przejęcia sesji'),
+    'user.created' => tr('Utworzenie konta'),
+    'user.updated' => tr('Zmiana konta'),
+    'dictionary.created' => tr('Dodanie pozycji słownika'),
+    'dictionary.updated' => tr('Zmiana pozycji słownika'),
+    'truck.created' => tr('Dodanie wózka'),
+    'truck.updated' => tr('Zmiana wózka'),
+    'truck.qr_reissued' => tr('Nowy kod QR wózka'),
+    'truck.deleted' => tr('Usunięcie wózka'),
+    'truck_manufacturer.created' => tr('Dodanie producenta wózków'),
+    'truck_manufacturer.updated' => tr('Zmiana producenta wózków'),
+    'truck_manufacturer.deleted' => tr('Usunięcie producenta wózków'),
+    'truck_model.created' => tr('Dodanie modelu wózka'),
+    'truck_model.updated' => tr('Zmiana modelu wózka'),
+    'truck_model.deleted' => tr('Usunięcie modelu wózka'),
+    'incident.created' => tr('Zgłoszenie zdarzenia'),
+    'incident.updated' => tr('Zmiana zgłoszenia'),
+    'operator.created' => tr('Dodanie operatora'),
+    'operator.updated' => tr('Zmiana operatora'),
+    'operator.qr_reissued' => tr('Nowy kod QR operatora'),
+    'permit.created' => tr('Dodanie uprawnienia'),
+    'permit.updated' => tr('Zmiana uprawnienia'),
+    'permit.expired' => tr('Uprawnienie wygasło'),
+    'permit.renewed' => tr('Uprawnienie odnowione (nowy numer)'),
+    'permit.document_attached' => tr('Dołączenie skanu dokumentu'),
+    'permit.document_removed' => tr('Usunięcie skanu dokumentu'),
+    'report.exported' => tr('Eksport do Excel'),
     _ => action,
   };
 }
@@ -164,7 +170,13 @@ class PageOf<T> {
 String formatDateTime(DateTime? d) {
   if (d == null) return '—';
   String two(int n) => n.toString().padLeft(2, '0');
-  return '${d.year}-${two(d.month)}-${two(d.day)} ${two(d.hour)}:${two(d.minute)}';
+  return tr('{year}-{month}-{day} {hour}:{minute}', {
+    'year': d.year,
+    'month': two(d.month),
+    'day': two(d.day),
+    'hour': two(d.hour),
+    'minute': two(d.minute),
+  });
 }
 
 /// The panel's lists; [api] is the URL segment under /dictionaries.
@@ -175,10 +187,12 @@ enum DictionaryKind {
   incidentCategories('incident-categories', 'Kategorie zdarzeń'),
   sites('sites', 'Lokalizacje');
 
-  const DictionaryKind(this.api, this.label);
+  const DictionaryKind(this.api, this._label);
 
   final String api;
-  final String label;
+  final String _label;
+
+  String get label => tr(_label);
 }
 
 enum IncidentType {
@@ -186,16 +200,20 @@ enum IncidentType {
   uszkodzenie('USZKODZENIE', 'Uszkodzenie'),
   kolizja('KOLIZJA', 'Kolizja');
 
-  const IncidentType(this.api, this.label);
+  const IncidentType(this.api, this._label);
 
   final String api;
-  final String label;
+  final String _label;
+
+  String get label => tr(_label);
 
   /// What the type means — shown next to the choice, the line between them is not obvious.
   String get hint => switch (this) {
-    IncidentType.awaria => 'Wózek przestał działać prawidłowo — usterka techniczna (bateria, hydraulika, maszt…).',
-    IncidentType.uszkodzenie => 'Fizyczne uszkodzenie bez zderzenia (pęknięta osłona, wygięte widły, zużyta opona).',
-    IncidentType.kolizja => 'Wózek w coś uderzył: regał, ścianę lub bramę, inny wózek.',
+    IncidentType.awaria => tr('Wózek przestał działać prawidłowo — usterka techniczna (bateria, hydraulika, maszt…).'),
+    IncidentType.uszkodzenie => tr(
+      'Fizyczne uszkodzenie bez zderzenia (pęknięta osłona, wygięte widły, zużyta opona).',
+    ),
+    IncidentType.kolizja => tr('Wózek w coś uderzył: regał, ścianę lub bramę, inny wózek.'),
   };
 
   static IncidentType fromApi(String value) => IncidentType.values.firstWhere((t) => t.api == value);
@@ -235,22 +253,24 @@ enum TruckStatus {
   outOfService('OUT_OF_SERVICE', 'Wyłączony z eksploatacji'),
   inactive('INACTIVE', 'Nieaktywny');
 
-  const TruckStatus(this.api, this.label);
+  const TruckStatus(this.api, this._label);
 
   final String api;
-  final String label;
+  final String _label;
+
+  String get label => tr(_label);
 
   /// For a status label in a list row.
   String get shortLabel => switch (this) {
-    TruckStatus.outOfService => 'Wyłączony',
+    TruckStatus.outOfService => tr('Wyłączony'),
     _ => label,
   };
 
   /// For a filter: the trucks in this status.
   String get filterLabel => switch (this) {
-    TruckStatus.active => 'Aktywne',
-    TruckStatus.outOfService => 'Wyłączone',
-    TruckStatus.inactive => 'Nieaktywne',
+    TruckStatus.active => tr('Aktywne'),
+    TruckStatus.outOfService => tr('Wyłączone'),
+    TruckStatus.inactive => tr('Nieaktywne'),
   };
 
   static TruckStatus fromApi(String value) => TruckStatus.values.firstWhere((s) => s.api == value);
@@ -353,10 +373,12 @@ enum PermitStatus {
   // Replaced by a renewal (new number); kept read-only.
   archived('ARCHIVED', 'Zarchiwizowane');
 
-  const PermitStatus(this.api, this.label);
+  const PermitStatus(this.api, this._label);
 
   final String api;
-  final String label;
+  final String _label;
+
+  String get label => tr(_label);
 
   static PermitStatus fromApi(String value) => PermitStatus.values.firstWhere((s) => s.api == value);
 }
@@ -507,21 +529,23 @@ enum IncidentStatus {
   inProgress('IN_PROGRESS', 'W trakcie'),
   closed('CLOSED', 'Zamknięte');
 
-  const IncidentStatus(this.api, this.label);
+  const IncidentStatus(this.api, this._label);
 
   final String api;
-  final String label;
+  final String _label;
+
+  String get label => tr(_label);
 
   static IncidentStatus fromApi(String value) => IncidentStatus.values.firstWhere((s) => s.api == value);
 }
 
 /// A mark the server puts on a report for the administrator to look at.
 String incidentFlagLabel(String flag) => switch (flag) {
-  'OPERATOR_INACTIVE' => 'Operator nieaktywny',
-  'NO_ACTIVE_PERMIT' => 'Brak ważnego uprawnienia',
-  'TRUCK_TYPE_NOT_PERMITTED' => 'Brak uprawnienia na ten typ wózka',
-  'MTH_LOWER_THAN_LAST' => 'MTH niższe niż ostatnio',
-  'UNREGISTERED_OPERATOR' => 'Osoba spoza rejestru operatorów',
+  'OPERATOR_INACTIVE' => tr('Operator nieaktywny'),
+  'NO_ACTIVE_PERMIT' => tr('Brak ważnego uprawnienia'),
+  'TRUCK_TYPE_NOT_PERMITTED' => tr('Brak uprawnienia na ten typ wózka'),
+  'MTH_LOWER_THAN_LAST' => tr('MTH niższe niż ostatnio'),
+  'UNREGISTERED_OPERATOR' => tr('Osoba spoza rejestru operatorów'),
   _ => flag,
 };
 

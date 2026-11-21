@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/models.dart';
 import 'report_repository.dart';
+import '../../core/i18n.dart';
 
 /// What happened, as both report forms ask it: the public one an operator
 /// opens from a truck's sticker, and the one a signed-in user fills in for
@@ -70,10 +71,10 @@ class IncidentDraft extends ChangeNotifier {
 
   /// The first thing still to fill in, or null when the fields are complete.
   String? missing({required bool photoRequired}) {
-    if (type == null) return 'Wybierz rodzaj zdarzenia.';
-    if (categoryId == null) return 'Wybierz kategorię.';
-    if (mth.text.trim().isNotEmpty && mthValue == null) return 'Motogodziny: podaj liczbę, np. 1234,5.';
-    if (photoRequired && photos.isEmpty) return 'Dodaj co najmniej jedno zdjęcie.';
+    if (type == null) return tr('Wybierz rodzaj zdarzenia.');
+    if (categoryId == null) return tr('Wybierz kategorię.');
+    if (mth.text.trim().isNotEmpty && mthValue == null) return tr('Motogodziny: podaj liczbę, np. 1234,5.');
+    if (photoRequired && photos.isEmpty) return tr('Dodaj co najmniej jedno zdjęcie.');
     return null;
   }
 
@@ -136,7 +137,7 @@ class IncidentFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        stepTitle(context, '$firstStep. Co się stało?'),
+        stepTitle(context, tr('{firstStep}. Co się stało?', {'firstStep': firstStep})),
         SegmentedButton<IncidentType>(
           segments: [for (final t in IncidentType.values) ButtonSegment(value: t, label: Text(t.label))],
           selected: {?d.type},
@@ -154,7 +155,7 @@ class IncidentFields extends StatelessWidget {
               TextSpan(
                 children: [
                   TextSpan(
-                    text: '${t.label}: ',
+                    text: tr('{label}: ', {'label': t.label}),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   TextSpan(text: t.hint),
@@ -170,8 +171,8 @@ class IncidentFields extends StatelessWidget {
           initialValue: d.categoryId,
           isExpanded: true,
           decoration: InputDecoration(
-            labelText: 'Kategoria',
-            helperText: d.type == null ? 'Najpierw wybierz rodzaj zdarzenia.' : null,
+            labelText: tr('Kategoria'),
+            helperText: d.type == null ? tr('Najpierw wybierz rodzaj zdarzenia.') : null,
           ),
           items: [for (final c in d.categories) DropdownMenuItem(value: c.id, child: Text(c.name))],
           onChanged: d.type == null || !enabled ? null : d.pickCategory,
@@ -179,11 +180,11 @@ class IncidentFields extends StatelessWidget {
         const SizedBox(height: 8),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Wózek wyłączony z eksploatacji'),
+          title: Text(tr('Wózek wyłączony z eksploatacji')),
           subtitle: Text(
             d.outOfService
-                ? 'TAK — wózek zostanie zablokowany do decyzji administratora.'
-                : 'NIE — wózek może dalej pracować.',
+                ? tr('TAK — wózek zostanie zablokowany do decyzji administratora.')
+                : tr('NIE — wózek może dalej pracować.'),
           ),
           value: d.outOfService,
           onChanged: enabled ? d.setOutOfService : null,
@@ -195,10 +196,14 @@ class IncidentFields extends StatelessWidget {
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
           decoration: InputDecoration(
-            labelText: 'Motogodziny (MTH)',
-            helperText: d.lastMth == null ? 'Z licznika wózka.' : 'Ostatnio zgłoszono: ${_mthText(d.lastMth!)}',
+            labelText: tr('Motogodziny (MTH)'),
+            helperText: d.lastMth == null
+                ? tr('Z licznika wózka.')
+                : tr('Ostatnio zgłoszono: {lastMth}', {'lastMth': _mthText(d.lastMth!)}),
             errorText: d.mthBelowLast
-                ? 'Mniej niż ostatnio (${_mthText(d.lastMth!)}). Sprawdź licznik — można wysłać.'
+                ? tr('Mniej niż ostatnio ({lastMth}). Sprawdź licznik — można wysłać.', {
+                    'lastMth': _mthText(d.lastMth!),
+                  })
                 : null,
           ),
           onChanged: (_) => d.textChanged(),
@@ -209,10 +214,15 @@ class IncidentFields extends StatelessWidget {
           enabled: enabled,
           maxLines: 3,
           maxLength: 2000,
-          decoration: const InputDecoration(labelText: 'Opis (opcjonalnie)', alignLabelWithHint: true),
+          decoration: InputDecoration(labelText: tr('Opis (opcjonalnie)'), alignLabelWithHint: true),
         ),
         const SizedBox(height: 4),
-        stepTitle(context, '${firstStep + 1}. Zdjęcia ${photoRequired ? '(co najmniej jedno)' : '(opcjonalnie)'}'),
+        stepTitle(
+          context,
+          photoRequired
+              ? tr('{n}. Zdjęcia (co najmniej jedno)', {'n': firstStep + 1})
+              : tr('{n}. Zdjęcia (opcjonalnie)', {'n': firstStep + 1}),
+        ),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -221,12 +231,12 @@ class IncidentFields extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: enabled ? () => _addPhotos(context, ImageSource.camera) : null,
               icon: const Icon(Icons.photo_camera),
-              label: const Text('Zrób zdjęcie'),
+              label: Text(tr('Zrób zdjęcie')),
             ),
             OutlinedButton.icon(
               onPressed: enabled ? () => _addPhotos(context, ImageSource.gallery) : null,
               icon: const Icon(Icons.photo_library_outlined),
-              label: const Text('Z galerii'),
+              label: Text(tr('Z galerii')),
             ),
           ],
         ),
@@ -261,7 +271,7 @@ class IncidentFields extends StatelessWidget {
         top: 0,
         child: IconButton.filledTonal(
           visualDensity: VisualDensity.compact,
-          tooltip: 'Usuń zdjęcie',
+          tooltip: tr('Usuń zdjęcie'),
           onPressed: enabled ? () => draft.removePhoto(i) : null,
           icon: const Icon(Icons.close, size: 16),
         ),

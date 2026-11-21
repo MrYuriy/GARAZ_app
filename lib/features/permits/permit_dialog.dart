@@ -6,6 +6,7 @@ import '../../core/download/download.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import 'permit_widgets.dart';
+import '../../core/i18n.dart';
 
 /// Add a permit to an operator ([permit] == null), or open one: administrators
 /// edit it and its scanned document, managers only read. Pops true when
@@ -88,7 +89,7 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
     if (_types.isEmpty) {
-      setState(() => _error = 'Zaznacz co najmniej jeden rodzaj wózka.');
+      setState(() => _error = tr('Zaznacz co najmniej jeden rodzaj wózka.'));
       return;
     }
     setState(() {
@@ -163,7 +164,14 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
       final renewed = await ref.read(permitsRepositoryProvider).renew(p.id, values);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Wydano ${renewed.number}. Poprzednie (${p.number}) trafiło do archiwum.')),
+        SnackBar(
+          content: Text(
+            tr('Wydano {number}. Poprzednie ({number2}) trafiło do archiwum.', {
+              'number': renewed.number,
+              'number2': p.number,
+            }),
+          ),
+        ),
       );
       setState(() {
         _permit = renewed;
@@ -190,7 +198,7 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
           opened || await saveBytes(pdf, 'upowaznienie-${p.number.replaceAll('/', '-')}.pdf', 'application/pdf');
       if (!saved && mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Nie udało się otworzyć ani zapisać pliku.')));
+            .showSnackBar(SnackBar(content: Text(tr('Nie udało się otworzyć ani zapisać pliku.'))));
       }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -210,25 +218,25 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
     await _documentAction(() async {
       final bytes = await file.readAsBytes();
       return ref.read(permitsRepositoryProvider).attachDocument(_permit!.id, bytes, file.name);
-    }, 'Dołączono skan dokumentu.');
+    }, tr('Dołączono skan dokumentu.'));
   }
 
   Future<void> _removeDocument() async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Usunąć skan dokumentu?'),
-        content: const Text('Plik zostanie usunięty. Dane dokumentu (nazwa, numer, data) zostają.'),
+        title: Text(tr('Usunąć skan dokumentu?')),
+        content: Text(tr('Plik zostanie usunięty. Dane dokumentu (nazwa, numer, data) zostają.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Anuluj')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Usuń')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Anuluj'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Usuń'))),
         ],
       ),
     );
     if (ok != true) return;
     await _documentAction(
       () => ref.read(permitsRepositoryProvider).removeDocument(_permit!.id),
-      'Usunięto skan dokumentu.',
+      tr('Usunięto skan dokumentu.'),
     );
   }
 
@@ -277,16 +285,17 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
     final categories = [
       for (final c in _categories ?? const <DictionaryEntry>[]) DropdownMenuItem(value: c.id, child: Text(c.name)),
       if (p != null && !(_categories ?? const []).any((c) => c.id == p.category.id))
-        DropdownMenuItem(value: p.category.id, child: Text('${p.category.name} (wyłączona)')),
+        DropdownMenuItem(value: p.category.id, child: Text(tr('{name} (wyłączona)', {'name': p.category.name}))),
     ];
     final typeChoices = <EntryRef>[
       for (final t in _truckTypes ?? const <DictionaryEntry>[]) EntryRef(t.id, t.name),
       for (final t in p?.truckTypes ?? const <EntryRef>[])
-        if (!(_truckTypes ?? const []).any((e) => e.id == t.id)) EntryRef(t.id, '${t.name} (wyłączony)'),
+        if (!(_truckTypes ?? const []).any((e) => e.id == t.id))
+          EntryRef(t.id, tr('{name} (wyłączony)', {'name': t.name})),
     ];
 
     return AlertDialog(
-      title: Text(_isNew ? 'Nowe uprawnienie' : 'Uprawnienie ${p!.number}'),
+      title: Text(_isNew ? tr('Nowe uprawnienie') : tr('Uprawnienie {number}', {'number': p!.number})),
       content: SizedBox(
         width: 520,
         child: Form(
@@ -314,54 +323,56 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
                     ],
                   ),
                 if (archived)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 8),
                     child: Text(
-                      'Zarchiwizowane — zastąpione przez odnowione uprawnienie z nowym numerem. Tylko do odczytu.',
+                      tr('Zarchiwizowane — zastąpione przez odnowione uprawnienie z nowym numerem. Tylko do odczytu.'),
                     ),
                   ),
                 if (_categories != null && _categories!.isEmpty && _isNew)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 8),
-                    child: Text('Najpierw dodaj kategorie uprawnień w zakładce „Słowniki”.'),
+                    child: Text(tr('Najpierw dodaj kategorie uprawnień w zakładce „Słowniki”.')),
                   ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _number,
                   readOnly: readOnly,
                   decoration: InputDecoration(
-                    labelText: 'Nr uprawnienia',
+                    labelText: tr('Nr uprawnienia'),
                     helperText: _isNew
-                        ? 'Zostaw puste — system nada kolejny numer roku (np. 001/${DateTime.now().year}). '
-                              'Wpisz tylko przy przenoszeniu starego uprawnienia.'
+                        ? tr(
+                            'Zostaw puste — system nada kolejny numer roku (np. 001/{year}). Wpisz tylko przy przenoszeniu starego uprawnienia.',
+                            {'year': DateTime.now().year},
+                          )
                         : null,
                     helperMaxLines: 3,
                   ),
-                  validator: (v) => !_isNew && (v ?? '').trim().isEmpty ? 'Podaj numer' : null,
+                  validator: (v) => !_isNew && (v ?? '').trim().isEmpty ? tr('Podaj numer') : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
                   initialValue: _categoryId,
-                  decoration: const InputDecoration(labelText: 'Kategoria'),
+                  decoration: InputDecoration(labelText: tr('Kategoria')),
                   items: categories,
                   onChanged: readOnly ? null : (v) => setState(() => _categoryId = v),
-                  validator: (v) => v == null ? 'Wybierz kategorię' : null,
+                  validator: (v) => v == null ? tr('Wybierz kategorię') : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _udt,
                   readOnly: readOnly,
-                  decoration: const InputDecoration(
-                    labelText: 'Nr uprawnień UDT',
-                    helperText: 'Wymagany, jeśli uprawnienie opiera się na UDT — na karcie zaznaczy „UDT”.',
+                  decoration: InputDecoration(
+                    labelText: tr('Nr uprawnień UDT'),
+                    helperText: tr('Wymagany, jeśli uprawnienie opiera się na UDT — na karcie zaznaczy „UDT”.'),
                     helperMaxLines: 2,
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text('Rodzaje wózków', style: Theme.of(context).textTheme.labelLarge),
+                Text(tr('Rodzaje wózków'), style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 4),
                 if (typeChoices.isEmpty && _truckTypes != null)
-                  const Text('Brak typów wózków — dodaj je w zakładce „Słowniki”.'),
+                  Text(tr('Brak typów wózków — dodaj je w zakładce „Słowniki”.')),
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
@@ -381,7 +392,7 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
                   children: [
                     Expanded(
                       child: _DateField(
-                        label: 'Data wydania',
+                        label: tr('Data wydania'),
                         value: _issuedOn,
                         onPick: readOnly
                             ? null
@@ -395,7 +406,7 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _DateField(
-                        label: 'Ważne do',
+                        label: tr('Ważne do'),
                         value: _validUntil,
                         onPick: readOnly
                             ? null
@@ -405,7 +416,7 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
                               },
                         required: true,
                         validator: (_) => _validUntil != null && _issuedOn != null && _validUntil!.isBefore(_issuedOn!)
-                            ? 'Przed datą wydania'
+                            ? tr('Przed datą wydania')
                             : null,
                       ),
                     ),
@@ -414,13 +425,13 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
                 if (p != null && !readOnly) ...[
                   const SizedBox(height: 12),
                   if (p.status == PermitStatus.expired)
-                    const Text(
-                      'Wygasłe — status nadaje system. Przesuń datę „Ważne do”, aby uprawnienie znów było aktywne.',
+                    Text(
+                      tr('Wygasłe — status nadaje system. Przesuń datę „Ważne do”, aby uprawnienie znów było aktywne.'),
                     )
                   else
                     DropdownButtonFormField<PermitStatus>(
                       initialValue: _status,
-                      decoration: const InputDecoration(labelText: 'Status'),
+                      decoration: InputDecoration(labelText: tr('Status')),
                       items: [
                         for (final s in [PermitStatus.active, PermitStatus.suspended])
                           DropdownMenuItem(value: s, child: Text(s.label)),
@@ -432,20 +443,20 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
                     TextFormField(
                       controller: _comment,
                       maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Komentarz do zmiany statusu (opcjonalnie)',
-                        helperText: 'Np. „zawieszone do ponownego szkolenia”. Trafia do dziennika.',
+                      decoration: InputDecoration(
+                        labelText: tr('Komentarz do zmiany statusu (opcjonalnie)'),
+                        helperText: tr('Np. „zawieszone do ponownego szkolenia”. Trafia do dziennika.'),
                       ),
                     ),
                   ],
                 ],
                 const SizedBox(height: 20),
-                Text('Dokument-podstawa', style: Theme.of(context).textTheme.titleSmall),
+                Text(tr('Dokument-podstawa'), style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 4),
                 TextFormField(
                   controller: _basisName,
                   readOnly: readOnly,
-                  decoration: const InputDecoration(labelText: 'Nazwa (np. zaświadczenie UDT)'),
+                  decoration: InputDecoration(labelText: tr('Nazwa (np. zaświadczenie UDT)')),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -454,13 +465,13 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
                       child: TextFormField(
                         controller: _basisNumber,
                         readOnly: readOnly,
-                        decoration: const InputDecoration(labelText: 'Numer'),
+                        decoration: InputDecoration(labelText: tr('Numer')),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _DateField(
-                        label: 'Data',
+                        label: tr('Data'),
                         value: _basisDate,
                         onPick: readOnly
                             ? null
@@ -478,7 +489,7 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      'Skan dokumentu dołączysz po zapisaniu uprawnienia.',
+                      tr('Skan dokumentu dołączysz po zapisaniu uprawnienia.'),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -496,24 +507,24 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
           TextButton.icon(
             onPressed: _busy ? null : _print,
             icon: const Icon(Icons.print_outlined),
-            label: const Text('Drukuj'),
+            label: Text(tr('Drukuj')),
           ),
         if (p != null && !readOnly)
           TextButton.icon(
             onPressed: _busy ? null : _renew,
             icon: const Icon(Icons.autorenew),
-            label: const Text('Odnów'),
+            label: Text(tr('Odnów')),
           ),
         if (readOnly)
-          FilledButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Zamknij'))
+          FilledButton(onPressed: () => Navigator.of(context).pop(false), child: Text(tr('Zamknij')))
         else ...[
           TextButton(
             onPressed: _busy ? null : () => Navigator.of(context).pop(_changed),
-            child: Text(_isNew ? 'Anuluj' : 'Zamknij'),
+            child: Text(_isNew ? tr('Anuluj') : tr('Zamknij')),
           ),
           FilledButton(
             onPressed: _busy || _categories == null ? null : _save,
-            child: Text(_isNew ? 'Dodaj' : 'Zapisz'),
+            child: Text(_isNew ? tr('Dodaj') : tr('Zapisz')),
           ),
         ],
       ],
@@ -528,15 +539,18 @@ class _PermitDialogState extends ConsumerState<PermitDialog> {
         const SizedBox(width: 8),
         Expanded(
           child: doc == null
-              ? const Text('Brak skanu dokumentu.')
-              : Text('${doc.filename} (${(doc.size / 1024).ceil()} KB)', overflow: TextOverflow.ellipsis),
+              ? Text(tr('Brak skanu dokumentu.'))
+              : Text(
+                  tr('{filename} ({ceil} KB)', {'filename': doc.filename, 'ceil': (doc.size / 1024).ceil()}),
+                  overflow: TextOverflow.ellipsis,
+                ),
         ),
-        if (doc != null) TextButton(onPressed: _busy ? null : _openDocument, child: const Text('Otwórz')),
+        if (doc != null) TextButton(onPressed: _busy ? null : _openDocument, child: Text(tr('Otwórz'))),
         if (!readOnly)
-          TextButton(onPressed: _busy ? null : _attach, child: Text(doc == null ? 'Dołącz skan' : 'Zmień')),
+          TextButton(onPressed: _busy ? null : _attach, child: Text(doc == null ? tr('Dołącz skan') : tr('Zmień'))),
         if (!readOnly && doc != null)
           IconButton(
-            tooltip: 'Usuń skan',
+            tooltip: tr('Usuń skan'),
             onPressed: _busy ? null : _removeDocument,
             icon: const Icon(Icons.delete_outline),
           ),
@@ -573,7 +587,7 @@ class _RenewDialogState extends State<_RenewDialog> {
   Widget build(BuildContext context) {
     final p = widget.permit;
     return AlertDialog(
-      title: Text('Odnów ${p.number}'),
+      title: Text(tr('Odnów {number}', {'number': p.number})),
       content: SizedBox(
         width: 420,
         child: Form(
@@ -583,15 +597,17 @@ class _RenewDialogState extends State<_RenewDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Powstanie nowe uprawnienie z kolejnym numerem roku. Kategoria, wózki, UDT i dokument-podstawa '
-                'zostaną przeniesione. Obecne (${p.number}) trafi do archiwum bez zmian.',
+                tr(
+                  'Powstanie nowe uprawnienie z kolejnym numerem roku. Kategoria, wózki, UDT i dokument-podstawa zostaną przeniesione. Obecne ({number}) trafi do archiwum bez zmian.',
+                  {'number': p.number},
+                ),
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
                     child: _DateField(
-                      label: 'Data wydania',
+                      label: tr('Data wydania'),
                       value: _issuedOn,
                       required: true,
                       onPick: () async {
@@ -603,14 +619,14 @@ class _RenewDialogState extends State<_RenewDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _DateField(
-                      label: 'Ważne do',
+                      label: tr('Ważne do'),
                       value: _validUntil,
                       required: true,
                       onPick: () async {
                         final d = await _pick(_validUntil);
                         if (d != null) setState(() => _validUntil = d);
                       },
-                      validator: (_) => _validUntil.isBefore(_issuedOn) ? 'Przed datą wydania' : null,
+                      validator: (_) => _validUntil.isBefore(_issuedOn) ? tr('Przed datą wydania') : null,
                     ),
                   ),
                 ],
@@ -620,13 +636,13 @@ class _RenewDialogState extends State<_RenewDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Anuluj')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('Anuluj'))),
         FilledButton(
           onPressed: () {
             if (!_form.currentState!.validate()) return;
             Navigator.pop(context, {'issued_on': formatDay(_issuedOn), 'valid_until': formatDay(_validUntil)});
           },
-          child: const Text('Odnów'),
+          child: Text(tr('Odnów')),
         ),
       ],
     );
@@ -661,11 +677,11 @@ class _DateField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         suffixIcon: onClear != null
-            ? IconButton(tooltip: 'Wyczyść', onPressed: onClear, icon: const Icon(Icons.clear))
+            ? IconButton(tooltip: tr('Wyczyść'), onPressed: onClear, icon: const Icon(Icons.clear))
             : const Icon(Icons.calendar_today_outlined),
       ),
       validator: (v) {
-        if (required && value == null) return 'Wybierz datę';
+        if (required && value == null) return tr('Wybierz datę');
         return validator?.call(v);
       },
     );

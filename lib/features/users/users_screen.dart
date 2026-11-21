@@ -7,6 +7,7 @@ import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/filter_bar.dart';
 import 'user_form_dialog.dart';
+import '../../core/i18n.dart';
 
 class UsersScreen extends ConsumerStatefulWidget {
   const UsersScreen({super.key});
@@ -65,7 +66,13 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     if (saved != null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(user == null ? 'Utworzono konto ${saved.login}' : 'Zapisano ${saved.login}')),
+          SnackBar(
+            content: Text(
+              user == null
+                  ? tr('Utworzono konto {login}', {'login': saved.login})
+                  : tr('Zapisano {login}', {'login': saved.login}),
+            ),
+          ),
         );
       }
       await _load();
@@ -85,14 +92,16 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Użytkownicy panelu'),
-        actions: [IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))],
+        title: Text(tr('Użytkownicy panelu')),
+        actions: [
+          IconButton(tooltip: tr('Odśwież'), onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+        ],
       ),
       floatingActionButton: canCreate
           ? FloatingActionButton.extended(
               onPressed: () => _openForm(),
               icon: const Icon(Icons.person_add_alt),
-              label: const Text('Dodaj'),
+              label: Text(tr('Dodaj')),
             )
           : null,
       body: Column(
@@ -100,15 +109,15 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           FilterBar(
             searchController: _search,
             onSearch: _onSearch,
-            searchHint: 'Szukaj: login, imię, email',
+            searchHint: tr('Szukaj: login, imię, email'),
             groups: () => [
               FilterGroup(
-                title: 'Rola',
+                title: tr('Rola'),
                 activeLabel: _role?.label,
                 onClear: () => _setRole(null),
                 options: [
                   for (final r in [null, ...Role.values])
-                    FilterOption(r?.label ?? 'Wszystkie role', selected: _role == r, onSelected: () => _setRole(r)),
+                    FilterOption(r?.label ?? tr('Wszystkie role'), selected: _role == r, onSelected: () => _setRole(r)),
                 ],
               ),
             ],
@@ -122,7 +131,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             ),
           Expanded(
             child: items.isEmpty && !_loading
-                ? const Center(child: Text('Brak kont.'))
+                ? Center(child: Text(tr('Brak kont.')))
                 : ListView.separated(
                     padding: const EdgeInsets.only(bottom: 88),
                     itemCount: items.length,
@@ -163,9 +172,9 @@ class _UserTile extends StatelessWidget {
         [
           user.login,
           user.role.label,
-          if (user.mustChangePassword) 'musi zmienić hasło',
+          if (user.mustChangePassword) tr('musi zmienić hasło'),
           if (user.email != null) user.email!,
-          'ost. logowanie: ${formatDateTime(user.lastLoginAt)}',
+          tr('ost. logowanie: {lastLoginAt}', {'lastLoginAt': formatDateTime(user.lastLoginAt)}),
         ].join(' · '),
       ),
       trailing: disabled ? Chip(label: Text(user.status.label)) : (editable ? const Icon(Icons.edit_outlined) : null),

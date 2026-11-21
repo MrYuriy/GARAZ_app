@@ -2,7 +2,7 @@ name: garaz_app
 description: "GARAZ — rejestr uprawnień operatorów i zdarzeń wózków widłowych (web + Android)."
 publish_to: 'none'
 
-version: 0.2.0+2
+version: 0.3.0+3
 
 environment:
   sdk: ^3.13.1
@@ -37,3 +37,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/i18n/

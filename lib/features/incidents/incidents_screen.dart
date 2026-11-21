@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/widgets/export_button.dart';
 import '../../core/widgets/filter_bar.dart';
 import 'incident_widgets.dart';
+import '../../core/i18n.dart';
 
 /// Reports from the operators' phones, newest first.
 class IncidentsScreen extends ConsumerStatefulWidget {
@@ -112,13 +113,13 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _add,
         icon: const Icon(Icons.add),
-        label: const Text('Dodaj zgłoszenie'),
+        label: Text(tr('Dodaj zgłoszenie')),
       ),
       appBar: AppBar(
-        title: const Text('Zdarzenia'),
+        title: Text(tr('Zdarzenia')),
         actions: [
           ExportButton(path: '/reports/incidents.xlsx', query: _exportQuery),
-          IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+          IconButton(tooltip: tr('Odśwież'), onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: Column(
@@ -126,15 +127,15 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
           FilterBar(
             searchController: _search,
             onSearch: _onSearch,
-            searchHint: 'Szukaj: nr wózka, operator',
+            searchHint: tr('Szukaj: nr wózka, operator'),
             groups: () => [
               FilterGroup(
-                title: 'Status',
-                activeLabel: _status?.label ?? (_openOnly ? null : 'Wszystkie'),
+                title: tr('Status'),
+                activeLabel: _status?.label ?? (_openOnly ? null : tr('Wszystkie')),
                 onClear: () => _setStatus(open: true),
                 options: [
                   FilterOption(
-                    'Otwarte',
+                    tr('Otwarte'),
                     selected: _openOnly && _status == null,
                     onSelected: () => _setStatus(open: true),
                   ),
@@ -144,22 +145,22 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
                       selected: _status == s,
                       onSelected: () => _setStatus(status: s),
                     ),
-                  FilterOption('Wszystkie', selected: !_openOnly && _status == null, onSelected: _setStatus),
+                  FilterOption(tr('Wszystkie'), selected: !_openOnly && _status == null, onSelected: _setStatus),
                 ],
               ),
               FilterGroup(
-                title: 'Rodzaj',
+                title: tr('Rodzaj'),
                 activeLabel: _type?.label,
                 onClear: () => _setType(null),
                 options: [
                   for (final t in [null, ...IncidentType.values])
-                    FilterOption(t?.label ?? 'Każdy rodzaj', selected: _type == t, onSelected: () => _setType(t)),
+                    FilterOption(t?.label ?? tr('Każdy rodzaj'), selected: _type == t, onSelected: () => _setType(t)),
                 ],
               ),
               FilterGroup.toggle(
-                title: 'Z uwagami',
+                title: tr('Z uwagami'),
                 value: _flaggedOnly,
-                activeLabel: _flaggedOnly ? 'Z uwagami' : null,
+                activeLabel: _flaggedOnly ? tr('Z uwagami') : null,
                 onChanged: (v) {
                   setState(() => _flaggedOnly = v);
                   _load();
@@ -176,10 +177,11 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
             ),
           Expanded(
             child: items.isEmpty && !_loading
-                ? const Center(
+                ? Center(
                     child: Text(
-                      'Brak zgłoszeń. Operatorzy zgłaszają zdarzenia, skanując kod QR na wózku; '
-                      'zgłoszenie za kogoś dodasz przyciskiem „Dodaj zgłoszenie”.',
+                      tr(
+                        'Brak zgłoszeń. Operatorzy zgłaszają zdarzenia, skanując kod QR na wózku; zgłoszenie za kogoś dodasz przyciskiem „Dodaj zgłoszenie”.',
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   )
@@ -216,10 +218,15 @@ class _IncidentTile extends StatelessWidget {
       ),
       title: Row(
         children: [
-          Text('${i.truck.name} · ', style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(tr('{name} · ', {'name': i.truck.name}), style: const TextStyle(fontWeight: FontWeight.w700)),
           Icon(incidentTypeIcon(i.type), size: 18),
           const SizedBox(width: 4),
-          Flexible(child: Text('${i.type.label} · ${i.category.name}', overflow: TextOverflow.ellipsis)),
+          Flexible(
+            child: Text(
+              tr('{label} · {name}', {'label': i.type.label, 'name': i.category.name}),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
       subtitle: Text.rich(
@@ -230,7 +237,7 @@ class _IncidentTile extends StatelessWidget {
                 i.driver,
                 formatDateTime(i.occurredAt),
                 if (i.mth != null) 'MTH ${formatMth(i.mth!)}',
-                if (i.outOfService) 'wyłączony z eksploatacji',
+                if (i.outOfService) tr('wyłączony z eksploatacji'),
               ].join(' · '),
             ),
             for (final f in i.flags) ...[

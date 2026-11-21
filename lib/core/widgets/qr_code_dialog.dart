@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../download/download.dart';
 import '../models.dart';
+import '../i18n.dart';
 
 /// A QR code (a truck's or an operator's): preview, PNG download, and — when
 /// [onReissue] is given — issuing a new code. Pops true when it was re-issued.
@@ -16,7 +17,7 @@ class QrCodeDialog extends StatefulWidget {
     required this.loadPng,
     this.caption,
     this.onReissue,
-    this.reissueWarning = 'Obecny kod przestanie działać od razu. Trzeba będzie wydrukować nowy.',
+    this.reissueWarning,
   });
 
   final String title;
@@ -29,7 +30,9 @@ class QrCodeDialog extends StatefulWidget {
 
   /// Issues a new code; returns its issue time and new caption. Null hides the button.
   final Future<(DateTime, String?)> Function()? onReissue;
-  final String reissueWarning;
+
+  /// Defaults to "the current code stops working at once".
+  final String? reissueWarning;
 
   @override
   State<QrCodeDialog> createState() => _QrCodeDialogState();
@@ -62,7 +65,7 @@ class _QrCodeDialogState extends State<QrCodeDialog> {
     if (_png == null) return;
     final saved = await saveBytes(_png!, widget.filename, 'image/png');
     if (!saved && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nie udało się zapisać pliku.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('Nie udało się zapisać pliku.'))));
     }
   }
 
@@ -70,11 +73,13 @@ class _QrCodeDialogState extends State<QrCodeDialog> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Nowy kod QR — ${widget.title}?'),
-        content: Text(widget.reissueWarning),
+        title: Text(tr('Nowy kod QR — {title}?', {'title': widget.title})),
+        content: Text(
+          widget.reissueWarning ?? tr('Obecny kod przestanie działać od razu. Trzeba będzie wydrukować nowy.'),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Anuluj')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Wygeneruj nowy')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Anuluj'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Wygeneruj nowy'))),
         ],
       ),
     );
@@ -103,7 +108,7 @@ class _QrCodeDialogState extends State<QrCodeDialog> {
   Widget build(BuildContext context) {
     final small = Theme.of(context).textTheme.bodySmall;
     return AlertDialog(
-      title: Text('Kod QR — ${widget.title}'),
+      title: Text(tr('Kod QR — {title}', {'title': widget.title})),
       content: SizedBox(
         width: 340,
         child: Column(
@@ -118,12 +123,12 @@ class _QrCodeDialogState extends State<QrCodeDialog> {
             ),
             const SizedBox(height: 8),
             if (_caption != null) SelectableText(_caption!, style: small, textAlign: TextAlign.center),
-            Text('Wydany: ${formatDateTime(_issuedAt)}', style: small),
+            Text(tr('Wydany: {issuedAt}', {'issuedAt': formatDateTime(_issuedAt)}), style: small),
             if (_reissued)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'Nowy kod wydany — wydrukuj go ponownie.',
+                  tr('Nowy kod wydany — wydrukuj go ponownie.'),
                   style: TextStyle(color: Theme.of(context).colorScheme.primary),
                 ),
               ),
@@ -140,14 +145,14 @@ class _QrCodeDialogState extends State<QrCodeDialog> {
           TextButton.icon(
             onPressed: _busy ? null : _reissue,
             icon: const Icon(Icons.autorenew),
-            label: const Text('Nowy kod'),
+            label: Text(tr('Nowy kod')),
           ),
         TextButton.icon(
           onPressed: _png == null ? null : _download,
           icon: const Icon(Icons.download),
           label: const Text('PNG'),
         ),
-        FilledButton(onPressed: () => Navigator.of(context).pop(_reissued), child: const Text('Zamknij')),
+        FilledButton(onPressed: () => Navigator.of(context).pop(_reissued), child: Text(tr('Zamknij'))),
       ],
     );
   }

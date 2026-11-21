@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../core/i18n.dart';
 
 class AuditScreen extends ConsumerStatefulWidget {
   const AuditScreen({super.key});
@@ -85,9 +86,9 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dziennik zmian'),
+        title: Text(tr('Dziennik zmian')),
         actions: [
-          IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _reload, icon: const Icon(Icons.refresh)),
+          IconButton(tooltip: tr('Odśwież'), onPressed: _loading ? null : _reload, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: Column(
@@ -107,7 +108,7 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
                   return Padding(
                     padding: const EdgeInsets.all(12),
                     child: Center(
-                      child: OutlinedButton(onPressed: _loading ? null : _more, child: const Text('Pokaż więcej')),
+                      child: OutlinedButton(onPressed: _loading ? null : _more, child: Text(tr('Pokaż więcej'))),
                     ),
                   );
                 }
@@ -118,8 +119,12 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
                   subtitle: Text(
                     [
                       formatDateTime(e.createdAt),
-                      if (e.userId != null) 'kto: #${e.userId}',
-                      if (e.resourceType != null) '${e.resourceType} #${e.resourceId}',
+                      if (e.userId != null) tr('kto: #{userId}', {'userId': e.userId}),
+                      if (e.resourceType != null)
+                        tr('{resourceType} #{resourceId}', {
+                          'resourceType': e.resourceType,
+                          'resourceId': e.resourceId,
+                        }),
                       if (e.payload != null && e.payload!.isNotEmpty) e.payload.toString(),
                       if (e.ipAddress != null) 'IP ${e.ipAddress}',
                     ].join(' · '),

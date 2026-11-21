@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'config.dart';
 import 'models.dart';
 import 'token_store.dart';
+import 'i18n.dart';
 
 /// An API answer the caller should show, with a Polish message for the user.
 class ApiException implements Exception {
@@ -150,11 +151,11 @@ class ApiClient {
       resp = await request(dio);
     } on DioException catch (e) {
       final status = e.response?.statusCode;
-      if (status == 401) throw ApiException(401, 'Sesja wygasła — zaloguj się ponownie.');
+      if (status == 401) throw ApiException(401, tr('Sesja wygasła — zaloguj się ponownie.'));
       if (status != null && status >= 500) {
-        throw ApiException(status, 'Błąd serwera ($status). Spróbuj ponownie za chwilę.');
+        throw ApiException(status, tr('Błąd serwera ({status}). Spróbuj ponownie za chwilę.', {'status': status}));
       }
-      throw ApiException(0, 'Brak połączenia z serwerem.');
+      throw ApiException(0, tr('Brak połączenia z serwerem.'));
     }
     final code = resp.statusCode ?? 0;
     if (code >= 200 && code < 300) return resp.data;
@@ -162,7 +163,7 @@ class ApiClient {
     final inUse = code == 409 && resp.data is Map && (resp.data as Map)['trucks'] is List;
     throw ApiException(
       code,
-      inUse ? 'Pozycja jest używana przez wózki.' : messageFor(code, detail),
+      inUse ? tr('Pozycja jest używana przez wózki.') : messageFor(code, detail),
       detail: detail,
       body: resp.data,
     );
@@ -172,17 +173,17 @@ class ApiClient {
   static String messageFor(int code, Object? detail) {
     switch (code) {
       case 403:
-        return 'Brak uprawnień do tej operacji.';
+        return tr('Brak uprawnień do tej operacji.');
       case 404:
-        return 'Nie znaleziono.';
+        return tr('Nie znaleziono.');
       case 409:
-        return 'Taki rekord już istnieje (np. login jest zajęty).';
+        return tr('Taki rekord już istnieje (np. login jest zajęty).');
       case 422:
-        return 'Niepoprawne dane: ${_validationText(detail)}';
+        return tr('Niepoprawne dane: {detail}', {'detail': _validationText(detail)});
       case 429:
-        return 'Zbyt wiele prób. Spróbuj ponownie za kilka minut.';
+        return tr('Zbyt wiele prób. Spróbuj ponownie za kilka minut.');
       default:
-        return detail is String ? detail : 'Nie udało się ($code).';
+        return detail is String ? tr(detail) : tr('Nie udało się ({code}).', {'code': code});
     }
   }
 
@@ -194,7 +195,7 @@ class ApiClient {
             if (e is Map) {
               final loc = (e['loc'] as List?)?.last;
               final msg = (e['msg'] ?? '').toString().replaceFirst('Value error, ', '');
-              return loc != null ? '$loc — $msg' : msg;
+              return loc != null ? '$loc — ${tr(msg)}' : tr(msg);
             }
             return e.toString();
           })

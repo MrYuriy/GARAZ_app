@@ -6,15 +6,18 @@ import '../../core/providers.dart';
 import '../../core/widgets/export_button.dart';
 import '../permits/permit_widgets.dart';
 import 'reports_repository.dart';
+import '../../core/i18n.dart';
 
 enum _Report {
   expiring('Wygasające uprawnienia', '/reports/expiring-permits.xlsx'),
   byTruck('Zdarzenia wg wózków', '/reports/incidents-by-truck.xlsx'),
   byCategory('Zdarzenia wg kategorii', '/reports/incidents-by-category.xlsx');
 
-  const _Report(this.label, this.xlsx);
+  const _Report(this._label, this.xlsx);
 
-  final String label;
+  final String _label;
+
+  String get label => tr(_label);
   final String xlsx;
 }
 
@@ -26,9 +29,11 @@ enum _Period {
   all('Cały okres'),
   custom('Wybierz daty…');
 
-  const _Period(this.label);
+  const _Period(this._label);
 
-  final String label;
+  final String _label;
+
+  String get label => tr(_label);
 }
 
 /// Raporty: expiring permits and incident counts, each also as an Excel file.
@@ -128,10 +133,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Raporty'),
+        title: Text(tr('Raporty')),
         actions: [
-          ExportButton(path: _report.xlsx, query: _query, tooltip: 'Raport do Excel'),
-          IconButton(tooltip: 'Odśwież', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+          ExportButton(path: _report.xlsx, query: _query, tooltip: tr('Raport do Excel')),
+          IconButton(tooltip: tr('Odśwież'), onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: Column(
@@ -169,17 +174,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          const Text('Kończą się w ciągu:'),
+          Text(tr('Kończą się w ciągu:')),
           for (final d in const [7, 14, 30, 60, 90])
             ChoiceChip(
-              label: Text('$d dni'),
+              label: Text(tr('{d} dni', {'d': d})),
               selected: _days == d,
               onSelected: (_) {
                 setState(() => _days = d);
                 _load();
               },
             ),
-          if (_expiring != null) Text('Razem: ${_expiring!.items.length}'),
+          if (_expiring != null) Text(tr('Razem: {itemsCount}', {'itemsCount': _expiring!.items.length})),
         ],
       );
     }
@@ -191,7 +196,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       children: [
         for (final p in _Period.values)
           ChoiceChip(label: Text(p.label), selected: _period == p, onSelected: (_) => _pickPeriod(p)),
-        Text(from == null ? 'Od początku do dziś' : '${formatDay(from)} – ${formatDay(to ?? DateTime.now())}'),
+        Text(
+          from == null
+              ? tr('Od początku do dziś')
+              : tr('{from} – {now}', {'from': formatDay(from), 'now': formatDay(to ?? DateTime.now())}),
+        ),
       ],
     );
   }
@@ -199,7 +208,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _expiringList() {
     final items = _expiring?.items ?? const <Permit>[];
     if (items.isEmpty && !_loading) {
-      return Center(child: Text('Żadne aktywne uprawnienie nie kończy się w ciągu $_days dni.'));
+      return Center(child: Text(tr('Żadne aktywne uprawnienie nie kończy się w ciągu {days} dni.', {'days': _days})));
     }
     return ListView.separated(
       itemCount: items.length,
@@ -207,7 +216,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       itemBuilder: (_, i) {
         final p = items[i];
         return ListTile(
-          title: Text('${p.operatorName} · ${p.number}'),
+          title: Text(tr('{operatorName} · {number}', {'operatorName': p.operatorName, 'number': p.number})),
           subtitle: Text(
             [p.category.name, if (p.operatorEmployer != null) p.operatorEmployer!, validityText(p)].join(' · '),
           ),
@@ -219,7 +228,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _countsList() {
     final rows = _counts ?? const <IncidentCounts>[];
-    if (rows.isEmpty && !_loading) return const Center(child: Text('Brak zdarzeń w tym okresie.'));
+    if (rows.isEmpty && !_loading) return Center(child: Text(tr('Brak zdarzeń w tym okresie.')));
     final scheme = Theme.of(context).colorScheme;
     final total = rows.fold(0, (sum, r) => sum + r.total);
     return ListView.separated(
@@ -228,7 +237,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       itemBuilder: (_, i) {
         if (i == rows.length) {
           return ListTile(
-            title: const Text('Razem', style: TextStyle(fontWeight: FontWeight.w700)),
+            title: Text(tr('Razem'), style: TextStyle(fontWeight: FontWeight.w700)),
             trailing: Text('$total', style: Theme.of(context).textTheme.titleLarge),
           );
         }
@@ -237,10 +246,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           title: Text([r.name, ?r.truckType].join(' · '), style: const TextStyle(fontWeight: FontWeight.w600)),
           subtitle: Text(
             [
-              for (final t in IncidentType.values) '${t.label}: ${r.byType[t]}',
-              if (r.outOfService > 0) 'wyłączony z eksploatacji: ${r.outOfService}',
-              'ostatnie ${formatDateTime(r.lastAt)}',
-              if (r.truckStatus != null && r.truckStatus != TruckStatus.active) 'teraz: ${r.truckStatus!.label}',
+              for (final t in IncidentType.values) tr('{label}: {t}', {'label': t.label, 't': r.byType[t]}),
+              if (r.outOfService > 0) tr('wyłączony z eksploatacji: {outOfService}', {'outOfService': r.outOfService}),
+              tr('ostatnie {lastAt}', {'lastAt': formatDateTime(r.lastAt)}),
+              if (r.truckStatus != null && r.truckStatus != TruckStatus.active)
+                tr('teraz: {label}', {'label': r.truckStatus!.label}),
             ].join(' · '),
           ),
           trailing: CircleAvatar(

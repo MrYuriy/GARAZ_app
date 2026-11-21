@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
+import '../../core/i18n.dart';
 
 /// Shown right after signing in with a starting password from the
 /// administrator. Nothing else opens until the user sets their own.
@@ -60,11 +61,12 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                 children: [
                   Icon(Icons.key, size: 48, color: theme.colorScheme.primary),
                   const SizedBox(height: 8),
-                  Text('Ustaw nowe hasło', textAlign: TextAlign.center, style: theme.textTheme.headlineSmall),
+                  Text(tr('Ustaw nowe hasło'), textAlign: TextAlign.center, style: theme.textTheme.headlineSmall),
                   const SizedBox(height: 8),
                   Text(
-                    'Konto ${user?.login ?? ''} ma hasło startowe od administratora. '
-                    'Zanim przejdziesz dalej, ustaw własne.',
+                    tr('Konto {login} ma hasło startowe od administratora. Zanim przejdziesz dalej, ustaw własne.', {
+                      'login': user?.login ?? '',
+                    }),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -74,8 +76,8 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                     obscureText: true,
                     autofillHints: const [AutofillHints.newPassword],
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'Nowe hasło'),
-                    validator: (v) => (v ?? '').isEmpty ? 'Podaj nowe hasło' : null,
+                    decoration: InputDecoration(labelText: tr('Nowe hasło')),
+                    validator: (v) => (v ?? '').isEmpty ? tr('Podaj nowe hasło') : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -83,8 +85,8 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                     obscureText: true,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _busy ? null : _submit(),
-                    decoration: const InputDecoration(labelText: 'Powtórz nowe hasło'),
-                    validator: (v) => v != _next.text ? 'Hasła się różnią' : null,
+                    decoration: InputDecoration(labelText: tr('Powtórz nowe hasło')),
+                    validator: (v) => v != _next.text ? tr('Hasła się różnią') : null,
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 16),
@@ -95,12 +97,12 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                     onPressed: _busy ? null : _submit,
                     child: _busy
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('Zapisz i przejdź dalej'),
+                        : Text(tr('Zapisz i przejdź dalej')),
                   ),
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: _busy ? null : () => ref.read(authControllerProvider.notifier).logout(),
-                    child: const Text('Wyloguj'),
+                    child: Text(tr('Wyloguj')),
                   ),
                 ],
               ),

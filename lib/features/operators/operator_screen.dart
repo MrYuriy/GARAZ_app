@@ -8,6 +8,7 @@ import '../../core/widgets/qr_code_dialog.dart';
 import '../permits/permit_dialog.dart';
 import '../permits/permit_widgets.dart';
 import 'operator_form_dialog.dart';
+import '../../core/i18n.dart';
 
 /// One operator: their details, QR card and permits.
 class OperatorScreen extends ConsumerStatefulWidget {
@@ -56,7 +57,7 @@ class _OperatorScreenState extends ConsumerState<OperatorScreen> {
         filename: 'qr-${o.fullName}.png',
         issuedAt: o.qrIssuedAt,
         loadPng: () => repo.qrPng(o.id),
-        reissueWarning: 'Obecna karta przestanie działać od razu. Trzeba będzie wydrukować nową.',
+        reissueWarning: tr('Obecna karta przestanie działać od razu. Trzeba będzie wydrukować nową.'),
         onReissue: isAdmin
             ? () async {
                 final fresh = await repo.reissueQr(o.id);
@@ -97,20 +98,20 @@ class _OperatorScreenState extends ConsumerState<OperatorScreen> {
     final o = _operator;
     return Scaffold(
       appBar: AppBar(
-        title: Text(o?.fullName ?? 'Operator'),
+        title: Text(o?.fullName ?? tr('Operator')),
         actions: [
           if (o != null)
-            IconButton(tooltip: 'Kod QR', onPressed: () => _qr(isAdmin), icon: const Icon(Icons.qr_code_2)),
+            IconButton(tooltip: tr('Kod QR'), onPressed: () => _qr(isAdmin), icon: const Icon(Icons.qr_code_2)),
           if (o != null)
-            ExportButton(path: '/reports/operators/${o.id}/history.xlsx', tooltip: 'Historia operatora (Excel)'),
-          if (o != null && isAdmin) IconButton(tooltip: 'Edytuj', onPressed: _edit, icon: const Icon(Icons.edit)),
+            ExportButton(path: '/reports/operators/${o.id}/history.xlsx', tooltip: tr('Historia operatora (Excel)')),
+          if (o != null && isAdmin) IconButton(tooltip: tr('Edytuj'), onPressed: _edit, icon: const Icon(Icons.edit)),
         ],
       ),
       floatingActionButton: o != null && isAdmin
           ? FloatingActionButton.extended(
               onPressed: _addPermit,
               icon: const Icon(Icons.add),
-              label: const Text('Dodaj uprawnienie'),
+              label: Text(tr('Dodaj uprawnienie')),
             )
           : null,
       body: o == null
@@ -128,35 +129,40 @@ class _OperatorScreenState extends ConsumerState<OperatorScreen> {
                       ListTile(
                         leading: const Icon(Icons.badge_outlined),
                         title: Text(o.employer?.name ?? '—'),
-                        subtitle: const Text('Pracodawca'),
+                        subtitle: Text(tr('Pracodawca')),
                         trailing: PermitStatusChip(status: o.permitStatus),
                       ),
                       ListTile(
                         leading: const Icon(Icons.credit_card),
                         title: Text(o.hysterCardNumber ?? '—'),
-                        subtitle: const Text('Nr karty Hyster Tracker'),
+                        subtitle: Text(tr('Nr karty Hyster Tracker')),
                       ),
                       ListTile(
                         leading: Icon(o.isActive ? Icons.check_circle_outline : Icons.block),
-                        title: Text(o.isActive ? 'Aktywny' : 'Nieaktywny'),
-                        subtitle: Text('${o.site.name} · kod QR wydany ${formatDateTime(o.qrIssuedAt)}'),
+                        title: Text(o.isActive ? tr('Aktywny') : tr('Nieaktywny')),
+                        subtitle: Text(
+                          tr('{name} · kod QR wydany {qrIssuedAt}', {
+                            'name': o.site.name,
+                            'qrIssuedAt': formatDateTime(o.qrIssuedAt),
+                          }),
+                        ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text('Uprawnienia', style: Theme.of(context).textTheme.titleMedium),
+                Text(tr('Uprawnienia'), style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (o.permits.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text(isAdmin ? 'Brak uprawnień — dodaj pierwsze.' : 'Brak uprawnień.'),
+                    child: Text(isAdmin ? tr('Brak uprawnień — dodaj pierwsze.') : tr('Brak uprawnień.')),
                   ),
                 for (final p in o.permits)
                   Card(
                     child: ListTile(
                       onTap: () => _openPermit(p.id),
-                      title: Text('${p.number} · ${p.category.name}'),
+                      title: Text(tr('{number} · {name}', {'number': p.number, 'name': p.category.name})),
                       subtitle: Text('${validityText(p)}\n${p.truckTypes.map((t) => t.name).join(', ')}'),
                       isThreeLine: true,
                       trailing: PermitStatusChip(status: p.status, daysLeft: p.daysLeft),
