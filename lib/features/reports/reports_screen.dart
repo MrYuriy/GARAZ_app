@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/export_button.dart';
 import '../permits/permit_widgets.dart';
+import 'report_incidents_screen.dart';
 import 'reports_repository.dart';
 import '../../core/i18n.dart';
 
@@ -226,6 +228,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
+  /// The reports counted in a row, in the same period.
+  void _details(IncidentCounts r) {
+    final (from, to) = _range;
+    final period = ReportsRepository.period(from, to);
+    final byTruck = _report == _Report.byTruck;
+    context.push(
+      ReportIncidentsScreen.location(
+        truckId: byTruck ? r.id : null,
+        categoryId: byTruck ? null : r.id,
+        name: r.name,
+        from: period['date_from'] as String?,
+        to: period['date_to'] as String?,
+      ),
+    );
+  }
+
   Widget _countsList() {
     final rows = _counts ?? const <IncidentCounts>[];
     if (rows.isEmpty && !_loading) return Center(child: Text(tr('Brak zdarzeń w tym okresie.')));
@@ -243,6 +261,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         }
         final r = rows[i];
         return ListTile(
+          onTap: () => _details(r),
           title: Text([r.name, ?r.truckType].join(' · '), style: const TextStyle(fontWeight: FontWeight.w600)),
           subtitle: Text(
             [
@@ -253,10 +272,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 tr('teraz: {label}', {'label': r.truckStatus!.label}),
             ].join(' · '),
           ),
-          trailing: CircleAvatar(
-            backgroundColor: scheme.primaryContainer,
-            foregroundColor: scheme.onPrimaryContainer,
-            child: Text('${r.total}'),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                backgroundColor: scheme.primaryContainer,
+                foregroundColor: scheme.onPrimaryContainer,
+                child: Text('${r.total}'),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+            ],
           ),
         );
       },

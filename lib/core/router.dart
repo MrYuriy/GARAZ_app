@@ -16,6 +16,7 @@ import '../features/operators/operators_screen.dart';
 import '../features/permits/permits_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/report/report_screen.dart';
+import '../features/reports/report_incidents_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/shell/home_shell.dart';
 import '../features/trucks/trucks_screen.dart';
@@ -101,7 +102,34 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen())],
+            routes: [
+              GoRoute(
+                path: '/reports',
+                builder: (_, _) => const ReportsScreen(),
+                routes: [
+                  // One row of a report: its incidents, and each of them.
+                  GoRoute(
+                    path: 'incidents',
+                    builder: (_, state) {
+                      final q = state.uri.queryParameters;
+                      return ReportIncidentsScreen(
+                        truckId: int.tryParse(q['truck'] ?? ''),
+                        categoryId: int.tryParse(q['category'] ?? ''),
+                        name: q['name'] ?? '',
+                        from: q['from'],
+                        to: q['to'],
+                      );
+                    },
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        builder: (_, state) => IncidentScreen(incidentId: int.parse(state.pathParameters['id']!)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),

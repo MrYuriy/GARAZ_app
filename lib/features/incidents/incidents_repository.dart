@@ -23,6 +23,11 @@ class IncidentsRepository {
     bool? flagged,
     bool openOnly = false,
     int? truckId,
+    int? categoryId,
+
+    /// Local days, both included (`YYYY-MM-DD`).
+    String? dateFrom,
+    String? dateTo,
   }) async {
     final data = await _api.send(
       (d) => d.get(
@@ -36,6 +41,9 @@ class IncidentsRepository {
           'flagged': ?flagged,
           if (openOnly) 'open': true,
           'truck_id': ?truckId,
+          'category_id': ?categoryId,
+          'date_from': ?dateFrom,
+          'date_to': ?dateTo,
         },
       ),
     );

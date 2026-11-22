@@ -189,72 +189,11 @@ class _IncidentsScreenState extends ConsumerState<IncidentsScreen> {
                     padding: const EdgeInsets.only(bottom: 88), // clear of the add button
                     itemCount: items.length,
                     separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (_, i) => _IncidentTile(incident: items[i], onTap: () => _open(items[i].id)),
+                    itemBuilder: (_, i) => IncidentTile(incident: items[i], onTap: () => _open(items[i].id)),
                   ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _IncidentTile extends StatelessWidget {
-  const _IncidentTile({required this.incident, required this.onTap});
-
-  final Incident incident;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final i = incident;
-    final scheme = Theme.of(context).colorScheme;
-    return ListTile(
-      onTap: onTap,
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: i.photos.isEmpty
-            ? SizedBox(width: 56, height: 56, child: Icon(incidentTypeIcon(i.type)))
-            : IncidentPhoto(incidentId: i.id, photoId: i.photos.first.id, size: 56),
-      ),
-      title: Row(
-        children: [
-          Text(tr('{name} · ', {'name': i.truck.name}), style: const TextStyle(fontWeight: FontWeight.w700)),
-          Icon(incidentTypeIcon(i.type), size: 18),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              tr('{label} · {name}', {'label': i.type.label, 'name': i.category.name}),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-      subtitle: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: [
-                i.driver,
-                formatDateTime(i.occurredAt),
-                if (i.mth != null) 'MTH ${formatMth(i.mth!)}',
-                if (i.outOfService) tr('wyłączony z eksploatacji'),
-              ].join(' · '),
-            ),
-            for (final f in i.flags) ...[
-              const TextSpan(text: '  '),
-              WidgetSpan(
-                alignment: PlaceholderAlignment.middle,
-                child: Icon(Icons.warning_amber, size: 16, color: scheme.error),
-              ),
-              TextSpan(
-                text: ' ${incidentFlagLabel(f)}',
-                style: TextStyle(color: scheme.error, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ],
-        ),
-      ),
-      trailing: IncidentStatusChip(status: i.status),
     );
   }
 }
